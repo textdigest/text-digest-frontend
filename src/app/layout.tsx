@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Noto_Sans } from 'next/font/google';
-import './globals.css';
 
-const notoSans = Noto_Sans({
-    variable: '--font-geist-mono',
-    subsets: ['latin'],
-});
+import './globals.css';
 
 export const metadata: Metadata = {
     title: '',
@@ -21,7 +17,7 @@ export default function RootLayout({
     return (
         <html lang='en' suppressHydrationWarning>
             <head />
-            <body className={`${notoSans.variable} ${notoSans.variable} antialiased`}>
+            <body className={`antialiased`}>
                 <ThemeProvider
                     attribute='class'
                     defaultTheme='system'
