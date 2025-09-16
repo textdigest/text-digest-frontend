@@ -31,14 +31,12 @@ export function SignInForm() {
                     {isPasswordHidden ? (
                         <Eye
                             onClick={() => setIsPasswordHidden(false)}
-                            size={16}
-                            className='absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer'
+                            className='absolute top-1/2 right-3 size-4 -translate-y-1/2 cursor-pointer'
                         />
                     ) : (
                         <EyeOff
                             onClick={() => setIsPasswordHidden(true)}
-                            size={16}
-                            className='absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer'
+                            className='absolute top-1/2 right-3 size-4 -translate-y-1/2 cursor-pointer'
                         />
                     )}
                 </div>
@@ -50,7 +48,7 @@ export function SignInForm() {
                 <div className='h-px flex-grow bg-neutral-200'></div>
             </div>
 
-            <Button variant='secondary' onClick={signInWithGoogle} className='w-full'>
+            <Button size='lg' variant='secondary' onClick={signInWithGoogle} className='w-full'>
                 <GoogleIcon />
                 Sign in with Google
             </Button>
