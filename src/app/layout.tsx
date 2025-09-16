@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Noto_Sans } from 'next/font/google';
 import './globals.css';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 const notoSans = Noto_Sans({
     variable: '--font-geist-mono',
@@ -28,7 +29,9 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    {children}
+                    <SidebarProvider>
+                        {children}
+                    </SidebarProvider>
                 </ThemeProvider>
             </body>
         </html>
