@@ -1,29 +1,35 @@
 'use client';
 import type { ReactNode } from 'react';
-import { useContext, createContext, useEffect } from 'react';
+import { useContext, createContext, useState, useEffect } from 'react';
 import {
     signOut as amplifySignOut,
     signIn as amplifySignIn,
+    signUp as amplifySignUp,
     signInWithRedirect,
+    confirmSignIn,
 } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import ConfigureAmplifyClientSide from '@/config/amplify.client.config';
 import { fetchAuthSession } from 'aws-amplify/auth';
 
 interface AuthContext {
-    signInWithEmailPassword: (username: string, password: string) => Promise<void>;
+    getOtpSignInCode: (email: string) => Promise<void>;
+    confirmOtpSignInCode: (code: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     getIdToken: () => Promise<string | null>;
-    getUserAttributes: () => Promise<any>;
+    getUserAttributes: () => Promise<Record<string, unknown> | null>;
+    isOtpSent: boolean;
 }
 
 const defaultContext: AuthContext = {
-    signInWithEmailPassword: async () => {},
+    getOtpSignInCode: async () => {},
+    confirmOtpSignInCode: async () => {},
     signInWithGoogle: async () => {},
     signOut: async () => {},
     getIdToken: async () => null,
     getUserAttributes: async () => null,
+    isOtpSent: false,
 };
 
 export const AuthContext = createContext<AuthContext>(defaultContext);
@@ -32,29 +38,40 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const router = useRouter();
+    const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
 
     useEffect(() => {
-        // Temporary way we can get the id token for dev
-        // Do not let this go to production
-        async function logToken() {
-            const idToken = await getIdToken();
-            const attributes = await getUserAttributes();
+        console.log(isOtpSent);
+    }, [isOtpSent]);
 
-            console.log('idtoken: ', idToken);
-            console.log('user attributes: ', attributes);
-        }
-        logToken();
-    }, []);
-
-    async function signInWithEmailPassword(username: string, password: string) {
+    async function getOtpSignInCode(email: string) {
         try {
             await amplifySignIn({
-                username,
-                password,
-            });
+                username: email,
+                options: { authFlowType: 'USER_AUTH', preferredChallenge: 'EMAIL_OTP' },
+            }).then(() => setIsOtpSent(true));
+        } catch (e: any) {
+            const code = e?.name || e?.__type;
+            if (code === 'UserNotFoundException') {
+                await amplifySignUp({
+                    username: email,
+                    options: { userAttributes: { email } },
+                });
+                await amplifySignIn({
+                    username: email,
+                    options: { authFlowType: 'USER_AUTH', preferredChallenge: 'EMAIL_OTP' },
+                }).then(() => setIsOtpSent(true));
+            } else {
+                console.error('Sign in failed:', e);
+            }
+        }
+    }
+
+    async function confirmOtpSignInCode(code: string) {
+        const { nextStep } = await confirmSignIn({ challengeResponse: code });
+
+        if (nextStep.signInStep === 'DONE') {
             router.push('/library');
-        } catch (e) {
-            console.error('Sign in failed:', e);
         }
     }
 
@@ -95,11 +112,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     const value = {
-        signInWithEmailPassword,
+        getOtpSignInCode,
+        confirmOtpSignInCode,
         signInWithGoogle,
         signOut,
         getIdToken,
         getUserAttributes,
+        isOtpSent,
     };
 
     return (
