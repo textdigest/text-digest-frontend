@@ -20,7 +20,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
       <Sidebar collapsible='none' className='p-2 bg-primary2 border-none shadow-2xl relative z-50'>
         <SidebarHeader className='bg-primary2'>
           <button onClick={() => setIsOpen((prevState => !prevState))} className="flex items-center justify-center">
-              <img 
+            <img 
               src="/LogoSmall.svg" 
               alt="TextDigest.AI Logo"
               className='w-15'

@@ -1,6 +1,7 @@
 'use client';
 
 import AppSideBar from "@/components/custom/AppSideBar";
+import LibraryCard from "@/components/custom/LibraryCard";
 
 export default function Home() {
     return (
@@ -9,6 +10,10 @@ export default function Home() {
           style={{ backgroundImage: "url('/Background.png')" }}
         >
             <AppSideBar currentRoute="Library"/>
+            <LibraryCard />
+            <LibraryCard />
+            <LibraryCard />
+            <LibraryCard />
         </div>
     );
 }
