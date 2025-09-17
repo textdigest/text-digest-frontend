@@ -9,7 +9,7 @@ const LibraryCard = () => {
             <Button
                 variant='outline'
                 size='icon'
-                className='hover:bg-primary2 absolute top-3 right-3 size-8 rounded-full border-none'
+                className='hover:!bg-primary2 !bg-primary2/0 absolute top-3 right-3 size-8 rounded-full border-none'
             >
                 <SlOptionsVertical className='text-accent' />
             </Button>
