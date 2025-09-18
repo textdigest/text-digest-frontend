@@ -39,7 +39,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                             }`}
                         >
                             <IoReaderOutline
-                                className={`text-${currentRoute === 'Reader' ? 'primary-bright' : 'accent'} ml-2 flex-shrink-0`}
+                                className={`text-${currentRoute === 'Reader' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
                                 className={`ml-auto text-${currentRoute === 'Reader' ? 'primary-bright' : 'accent'} text-lg font-medium whitespace-nowrap transition-opacity duration-300 ${
@@ -58,7 +58,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                             }`}
                         >
                             <IoLibrary
-                                className={`text-${currentRoute === 'Library' ? 'primary-bright' : 'accent'} ml-2 flex-shrink-0`}
+                                className={`text-${currentRoute === 'Library' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
                                 className={`ml-auto text-${currentRoute === 'Library' ? 'primary-bright' : 'accent'} text-lg font-medium whitespace-nowrap transition-opacity duration-300 ${
@@ -77,7 +77,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                             }`}
                         >
                             <IoAddOutline
-                                className={`text-${currentRoute === 'Add' ? 'primary-bright' : 'accent'} ml-2 flex-shrink-0`}
+                                className={`text-${currentRoute === 'Add' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
                                 className={`ml-auto text-${currentRoute === 'Add' ? 'primary-bright' : 'accent'} text-lg font-medium whitespace-nowrap transition-opacity duration-300 ${
@@ -96,7 +96,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                             }`}
                         >
                             <HiLibrary
-                                className={`text-${currentRoute === 'Market' ? 'primary-bright' : 'accent'} ml-2 flex-shrink-0`}
+                                className={`text-${currentRoute === 'Market' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
                                 className={`ml-auto text-${currentRoute === 'Market' ? 'primary-bright' : 'accent'} text-lg font-medium whitespace-nowrap transition-opacity duration-300 ${
@@ -115,7 +115,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                             }`}
                         >
                             <IoMdSettings
-                                className={`text-${currentRoute === 'Settings' ? 'primary-bright' : 'accent'} ml-2 flex-shrink-0`}
+                                className={`text-${currentRoute === 'Settings' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
                                 className={`ml-auto text-${currentRoute === 'Settings' ? 'primary-bright' : 'accent'} text-lg font-medium whitespace-nowrap transition-opacity duration-300 ${

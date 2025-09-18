@@ -1,4 +1,6 @@
 'use client';
+import AppSideBar from '@/components/custom/AppSideBar';
+import LibraryCard from '@/components/custom/LibraryCard';
 import { useAuth } from '@/hooks/auth/useAuth';
 
 export default function Page() {
@@ -14,8 +16,15 @@ export default function Page() {
     }
 
     return (
-        <div>
-            <button onClick={testBackend}>Post to health</button>
+        <div
+            className='flex min-h-screen w-[100%] bg-white bg-cover bg-center'
+            style={{ backgroundImage: "url('/Background.png')" }}
+        >
+            <AppSideBar currentRoute='Library' />
+            <LibraryCard />
+            <LibraryCard />
+            <LibraryCard />
+            <LibraryCard />
         </div>
     );
 }
