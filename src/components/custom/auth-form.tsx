@@ -16,13 +16,13 @@ export function SignInForm() {
     const [otp, setOtp] = useState<string | undefined>();
 
     return (
-        <div className='w-96 rounded-md p-2 lg:p-4'>
+        <div className='rounded-md'>
             {isEmailFieldHidden ? (
                 <Button
                     size='lg'
-                    variant='secondary'
+                    variant='outline'
                     onClick={() => setIsEmailFieldHidden(false)}
-                    className='w-full'
+                    className='bg-primary2 border-accent w-full py-6 text-xl text-white'
                 >
                     <Mail />
                     Sign in Email
@@ -40,12 +40,13 @@ export function SignInForm() {
                             placeholder='Enter your passcode'
                             id='otp'
                             type='text'
+                            className='bg-secondary border-accent py-6 text-white'
                         />
                     </div>
                     <Button
                         size='lg'
                         disabled={!otp || otp.length === 0}
-                        className='w-full'
+                        className='bg-primary-bright border-accent w-full py-6 text-xl text-white'
                         onClick={() => {
                             if (otp) confirmOtpSignInCode(otp);
                         }}
@@ -64,12 +65,14 @@ export function SignInForm() {
                             placeholder='jane.doe@textdigest.ai'
                             id='email'
                             type='email'
+                            className='bg-secondary border-accent py-6 text-white'
                         />
                     </div>
                     <Button
                         size='lg'
+                        variant='outline'
                         disabled={!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
-                        className='w-full'
+                        className='bg-primary2 border-accent w-full py-6 text-xl text-white'
                         onClick={() => {
                             if (email) getOtpSignInCode(email);
                         }}
@@ -80,15 +83,20 @@ export function SignInForm() {
                 </div>
             )}
 
-            <div className='my-4 flex items-center'>
-                <div className='h-px flex-grow bg-neutral-300 dark:bg-neutral-200'></div>
-                <span className='mx-2 text-sm font-medium text-neutral-500 dark:text-neutral-300'>
-                    or
+            <div className='my-8 flex items-center'>
+                <div className='dark:bg-accent h-px flex-grow bg-neutral-300'></div>
+                <span className='dark:text-accent mx-2 text-sm font-medium text-neutral-500'>
+                    OR CONTINUE WITH
                 </span>
-                <div className='h-px flex-grow bg-neutral-300 dark:bg-neutral-200'></div>
+                <div className='dark:bg-accent h-px flex-grow bg-neutral-300'></div>
             </div>
 
-            <Button size='lg' onClick={signInWithGoogle} className='w-full'>
+            <Button
+                size='lg'
+                onClick={signInWithGoogle}
+                variant='outline'
+                className='bg-primary2 border-accent w-full py-6 text-xl text-white'
+            >
                 <GoogleIcon />
                 Sign in with Google
             </Button>
