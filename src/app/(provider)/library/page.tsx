@@ -1,5 +1,6 @@
 'use client';
 import AppSideBar from '@/components/custom/AppSideBar';
+import Assistant from '@/components/custom/Assistant';
 import LibraryCard from '@/components/custom/LibraryCard';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -21,6 +22,7 @@ export default function Page() {
             style={{ backgroundImage: "url('/Background.png')" }}
         >
             <AppSideBar currentRoute='Library' />
+            <Assistant />
             <LibraryCard />
             <LibraryCard />
             <LibraryCard />

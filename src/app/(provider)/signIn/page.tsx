@@ -1,9 +1,5 @@
 import { SignInForm } from '@/components/custom/auth-form';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { FaGoogle } from 'react-icons/fa';
 
 export default function SignInPage() {
     return (
