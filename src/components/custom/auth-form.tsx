@@ -16,13 +16,13 @@ export function SignInForm() {
     const [otp, setOtp] = useState<string | undefined>();
 
     return (
-        <div className='w-96 max-w-full space-y-4 rounded-md bg-neutral-100 p-4 shadow-lg lg:space-y-10 lg:p-6 dark:bg-neutral-900'>
+        <div className='w-96 max-w-full space-y-4 rounded-md border border-neutral-200 bg-neutral-100 p-4 shadow-lg lg:space-y-10 lg:p-6 dark:border-neutral-800 dark:bg-neutral-900'>
             <div className='space-y-2'>
-                <h1 className='dark:to-primary-400 dark:from-primary-50 text-3xl font-bold lg:text-4xl dark:bg-gradient-to-r dark:bg-clip-text dark:text-transparent'>
+                <h1 className='to-primary-800 from-primary-400 dark:to-primary-400 dark:from-primary-50 bg-gradient-to-r bg-clip-text text-3xl font-bold text-transparent lg:text-4xl'>
                     Sign in
                     <span className='dark:text-primary-500'>.</span>
                 </h1>
-                <p className='text-lg dark:text-neutral-300'>
+                <p className='text-lg text-neutral-700 dark:text-neutral-300'>
                     Use your Google account, or request a one-time password to sign in.
                 </p>
             </div>
@@ -32,7 +32,7 @@ export function SignInForm() {
                         size='lg'
                         variant='secondary'
                         onClick={() => setIsEmailFieldHidden(false)}
-                        className='w-full py-4 text-base md:py-6 md:text-lg'
+                        className='w-full bg-white py-4 text-base md:py-6 md:text-lg dark:bg-neutral-800'
                     >
                         <Mail />
                         Sign in Email
