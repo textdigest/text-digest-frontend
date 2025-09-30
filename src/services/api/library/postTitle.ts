@@ -1,4 +1,4 @@
-import { getIdToken } from '@/services/amplify-auth/getIdToken';
+import { getIdToken } from '@/services/amplify/getIdToken';
 
 type PostTitleArgs = {
     title: string;

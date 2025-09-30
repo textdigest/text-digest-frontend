@@ -1,4 +1,4 @@
-import { getIdToken } from '@/services/amplify-auth/getIdToken';
+import { getIdToken } from '@/services/amplify/getIdToken';
 
 export async function getTitlesAll() {
     const token = await getIdToken();
