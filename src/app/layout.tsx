@@ -3,6 +3,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Noto_Sans } from 'next/font/google';
 
 import './globals.css';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 export const metadata: Metadata = {
     title: '',
@@ -24,7 +25,7 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    {children}
+                    <SidebarProvider>{children}</SidebarProvider>
                 </ThemeProvider>
             </body>
         </html>
