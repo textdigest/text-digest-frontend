@@ -20,10 +20,10 @@ export async function middleware(request: NextRequest, response: NextResponse) {
         return NextResponse.redirect(url);
     }
 
-    if (authenticated) {
-        const user = authenticated.user;
-        const attributes = authenticated.attributes;
-        const session = authenticated.session;
+    if (routes.auth.includes(pathname) && isAuthenticated) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/library';
+        return NextResponse.redirect(url);
     }
 
     return NextResponse.next();
