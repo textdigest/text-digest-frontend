@@ -1,21 +1,30 @@
 'use client';
-import { useAuth } from '@/hooks/auth/useAuth';
+import { useState, useEffect } from 'react';
+import AppSideBar from '@/components/custom/AppSideBar';
+import Assistant from '@/components/custom/Assistant';
+import LibraryCard from '@/components/custom/LibraryCard';
+
+import { getTitlesAll } from '@/services/api/library/getTitlesAll';
+import { getHealthCheck } from '@/services/api/health/getHealthCheck';
 
 export default function Page() {
-    const { getIdToken } = useAuth();
+    const [titles, setTitles] = useState();
 
-    async function testBackend() {
-        await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/health`, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${await getIdToken()}`,
-            },
-        });
-    }
+    useEffect(() => {
+        getTitlesAll().then((i) => setTitles(i));
+    }, []);
 
     return (
-        <div>
-            <button onClick={testBackend}>Post to health</button>
+        <div
+            className='flex h-screen w-screen bg-white bg-cover bg-center'
+            style={{ backgroundImage: "url('/Background.png')" }}
+        >
+            <AppSideBar currentRoute='Library' />
+            <Assistant />
+            <LibraryCard />
+            <LibraryCard />
+            <LibraryCard />
+            <LibraryCard />
         </div>
     );
 }
