@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { Input } from '../ui/input';
+import { ArrowRight } from 'lucide-react';
 
 const Assistant = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +21,12 @@ const Assistant = () => {
                                 : 'h-0 w-0'
                         }
                     />
+                    <Button
+                        variant='outline'
+                        className='!border-accent !bg-primary2 mx-2 rounded-full py-6 text-white'
+                    >
+                        {isOpen ? <ArrowRight /> : null}
+                    </Button>
                 </CardFooter>
             </Card>
             <div
