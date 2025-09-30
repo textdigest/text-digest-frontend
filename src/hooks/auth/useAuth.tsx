@@ -68,10 +68,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     async function confirmOtpSignInCode(code: string) {
-        const { nextStep } = await confirmSignIn({ challengeResponse: code });
+        try {
+            const { nextStep } = await confirmSignIn({ challengeResponse: code });
 
-        if (nextStep.signInStep === 'DONE') {
-            router.push('/library');
+            if (nextStep.signInStep === 'DONE') {
+                router.push('/library');
+            }
+        } catch (e) {
+            console.error(e);
+            //TODO: Toast error try again
         }
     }
 
