@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarHeader } from '../ui/sidebar';
 import { Button } from '../ui/button';
-import { IoReaderOutline, IoLibrary, IoAddOutline } from 'react-icons/io5';
-import { HiLibrary } from 'react-icons/hi';
-import { IoMdSettings } from 'react-icons/io';
+import { BookOpenText, LibraryBig, Plus, Store, Settings } from 'lucide-react';
 
 type AppSideBarProps = {
     currentRoute: string;
@@ -38,7 +36,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                                 isOpen ? 'w-65 px-3' : 'w-15 px-3'
                             }`}
                         >
-                            <IoReaderOutline
+                            <BookOpenText
                                 className={`text-${currentRoute === 'Reader' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
@@ -57,7 +55,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                                 isOpen ? 'w-65 px-3' : 'w-15 px-3'
                             }`}
                         >
-                            <IoLibrary
+                            <LibraryBig
                                 className={`text-${currentRoute === 'Library' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
@@ -76,7 +74,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                                 isOpen ? 'w-65 px-3' : 'w-15 px-3'
                             }`}
                         >
-                            <IoAddOutline
+                            <Plus
                                 className={`text-${currentRoute === 'Add' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
@@ -95,7 +93,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                                 isOpen ? 'w-65 px-3' : 'w-15 px-3'
                             }`}
                         >
-                            <HiLibrary
+                            <Store
                                 className={`text-${currentRoute === 'Market' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span
@@ -114,7 +112,7 @@ const AppSideBar = ({ currentRoute }: AppSideBarProps) => {
                                 isOpen ? 'w-65 px-3' : 'w-15 px-3'
                             }`}
                         >
-                            <IoMdSettings
+                            <Settings
                                 className={`text-${currentRoute === 'Settings' ? 'primary-bright' : 'accent'} !h-8 !w-8 flex-shrink-0`}
                             />
                             <span

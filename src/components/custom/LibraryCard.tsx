@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardAction, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
-import { SlOptionsVertical } from 'react-icons/sl';
+import { EllipsisVertical } from 'lucide-react';
 
 const LibraryCard = () => {
     return (
@@ -11,7 +11,7 @@ const LibraryCard = () => {
                 size='icon'
                 className='hover:!bg-primary2 !bg-primary2/0 absolute top-3 right-3 size-8 rounded-full border-none'
             >
-                <SlOptionsVertical className='text-accent' />
+                <EllipsisVertical className='text-accent' />
             </Button>
             <CardContent className='bg-primary2/80 m-5 flex h-[60%] w-[60%] items-center justify-center'>
                 <img src='/LogoSmall.svg' alt='TextDigest.AI Logo' className='m-auto' />
