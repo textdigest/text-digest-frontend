@@ -34,17 +34,11 @@ const Assistant = () => {
                     className={isOpen ? 'm-5 h-[80%] overflow-y-auto' : 'm-0 h-0 w-0 opacity-0'}
                 >
                     {messages.map(([user, ai], i) => (
-                        <div className='flex flex-col space-y-2'>
-                            <div
-                                key={`User_${i}`}
-                                className='bg-primary my-5 ml-auto w-fit max-w-[70%] rounded-4xl p-5 break-all hyphens-auto drop-shadow-xl'
-                            >
+                        <div key={i} className='flex flex-col space-y-2'>
+                            <div className='bg-primary my-5 ml-auto w-fit max-w-[70%] rounded-4xl p-5 break-all hyphens-auto drop-shadow-xl'>
                                 {user}
                             </div>
-                            <div
-                                key={`AI${i}`}
-                                className='bg-primary-bright my-5 mr-auto w-fit max-w-[70%] rounded-4xl p-5 break-all hyphens-auto drop-shadow-xl'
-                            >
+                            <div className='bg-primary-bright my-5 mr-auto w-fit max-w-[70%] rounded-4xl p-5 break-all hyphens-auto drop-shadow-xl'>
                                 {ai}
                             </div>
                         </div>
