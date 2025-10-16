@@ -1,3 +1,4 @@
+'use client';
 import { ITitle } from '@/types/library';
 import { EllipsisVertical, Trash2 } from 'lucide-react';
 
