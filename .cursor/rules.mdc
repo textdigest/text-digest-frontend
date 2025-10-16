@@ -3,3 +3,24 @@ description:
 globs:
 alwaysApply: true
 ---
+
+# Workflow
+
+- Make single, modular changes.
+- Avoid unintended side-effects; follow prompts precisely, only make changes that are explicitly
+  requested.
+
+# TailwindCSS + ShadCN
+
+- **ALWAYS** Use color palette:
+    - primary-50 -> primary-950
+    - neutral-50 -> neutral-950
+- **DO NOT** use text-primary, text-background; (USE OUR PALETTE)
+- **DARKMODE/LIGHTMODE** prefix dark: for darkmode, omit prefix for light mode
+
+# Code Style Guide
+
+- Always use the `function` keyword for pure functions and component definitions; Avoid arrow
+  functions when possible.
+- **NEVER** add comments to codebase.
+- **NEVER** delete or modify existant comments from codebase.

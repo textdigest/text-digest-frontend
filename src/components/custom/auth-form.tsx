@@ -1,17 +1,19 @@
 'use client';
 import { useState } from 'react';
-import { useAuth } from '@/hooks/auth/useAuth';
 import { GoogleIcon } from '@/svg/google-icon';
+import { ArrowRight, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mail } from 'lucide-react';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export function SignInForm() {
     const { signInWithGoogle, getOtpSignInCode, confirmOtpSignInCode, isOtpSent } = useAuth();
 
     const [isEmailFieldHidden, setIsEmailFieldHidden] = useState<boolean>(true);
     const [email, setEmail] = useState<string | undefined>();
+    const emailPattern =
+        /^[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
 
     const [otp, setOtp] = useState<string | undefined>();
 
@@ -35,23 +37,27 @@ export function SignInForm() {
                         className='w-full bg-white py-4 text-base md:py-6 md:text-lg dark:bg-neutral-800'
                     >
                         <Mail />
-                        Sign in Email
+                        Sign in with Email
                     </Button>
                 ) : !isOtpSent ? (
                     <div className='space-y-4'>
                         <div className='space-y-1'>
                             <Label htmlFor='email'>Email</Label>
                             <Input
-                                value={email}
+                                className='h-12'
+                                value={email ?? ''}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder='jane.doe@textdigest.ai'
                                 id='email'
                                 type='email'
+                                pattern={
+                                    '[A-Za-z0-9]+(?:[._%+-][A-Za-z0-9]+)*@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}'
+                                }
                             />
                         </div>
                         <Button
                             size='lg'
-                            disabled={!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
+                            disabled={!email || !emailPattern.test(email)}
                             className='w-full py-4 text-base md:py-6 md:text-lg'
                             onClick={() => {
                                 if (email) getOtpSignInCode(email);
@@ -66,12 +72,13 @@ export function SignInForm() {
                         <div className='space-y-1'>
                             <Label htmlFor='otp'>Passcode</Label>
                             <Input
-                                value={otp}
+                                className='h-12'
+                                value={otp ?? ''}
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     if (/^\d{0,8}$/.test(val)) setOtp(val);
                                 }}
-                                placeholder='Enter your passcode'
+                                placeholder={`Enter the passcode sent to ${(email ?? '').slice(0, 16)}...`}
                                 id='otp'
                                 type='text'
                             />
@@ -100,6 +107,7 @@ export function SignInForm() {
 
                 <Button
                     size='lg'
+                    variant='secondary'
                     onClick={signInWithGoogle}
                     className='w-full py-4 text-base md:py-6 md:text-lg'
                 >

@@ -10,15 +10,12 @@ import {
 } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import ConfigureAmplifyClientSide from '@/config/amplify.client.config';
-import { fetchAuthSession } from 'aws-amplify/auth';
 
 interface AuthContext {
     getOtpSignInCode: (email: string) => Promise<void>;
     confirmOtpSignInCode: (code: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
-    getIdToken: () => Promise<string | null>;
-    getUserAttributes: () => Promise<Record<string, unknown> | null>;
     isOtpSent: boolean;
 }
 
@@ -27,8 +24,6 @@ const defaultContext: AuthContext = {
     confirmOtpSignInCode: async () => {},
     signInWithGoogle: async () => {},
     signOut: async () => {},
-    getIdToken: async () => null,
-    getUserAttributes: async () => null,
     isOtpSent: false,
 };
 
@@ -68,15 +63,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     async function confirmOtpSignInCode(code: string) {
-        const { nextStep } = await confirmSignIn({ challengeResponse: code });
+        try {
+            const { nextStep } = await confirmSignIn({ challengeResponse: code });
 
-        if (nextStep.signInStep === 'DONE') {
-            router.push('/library');
+            if (nextStep.signInStep === 'DONE') {
+                router.push('/library');
+            }
+        } catch (e) {
+            console.error(e);
+            //TODO: Toast error try again
         }
     }
 
     async function signInWithGoogle() {
         try {
+            await amplifySignOut();
             await signInWithRedirect({
                 provider: 'Google',
             });
@@ -94,30 +95,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }
 
-    async function getIdToken(): Promise<string | null> {
-        const session = await fetchAuthSession();
-        const idToken = session?.tokens?.idToken?.toString() ?? null;
-        return idToken;
-    }
-
-    async function getUserAttributes() {
-        const session = await fetchAuthSession();
-        const idToken = session?.tokens?.idToken ?? null;
-
-        if (idToken) {
-            return idToken.payload;
-        }
-
-        return null;
-    }
-
     const value = {
         getOtpSignInCode,
         confirmOtpSignInCode,
         signInWithGoogle,
         signOut,
-        getIdToken,
-        getUserAttributes,
         isOtpSent,
     };
 
