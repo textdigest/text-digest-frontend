@@ -77,6 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     async function signInWithGoogle() {
         try {
+            await amplifySignOut();
             await signInWithRedirect({
                 provider: 'Google',
             });
