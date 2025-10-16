@@ -15,6 +15,8 @@ export async function postTitle({
     datePublished = '',
     pages = 0,
 }: PostTitleArgs) {
+    console.log('Attempting to post: ', title, author, datePublished, pages);
+
     const token = await getIdToken();
 
     const form = new FormData();
@@ -32,11 +34,4 @@ export async function postTitle({
         },
         body: form,
     });
-
-    if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(detail || 'Failed to post title');
-    }
-
-    return res.json();
 }

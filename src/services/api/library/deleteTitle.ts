@@ -1,14 +1,11 @@
+import type { ITitle } from '@/types/library';
 import { getIdToken } from '@/services/amplify/getIdToken';
 
-type DeleteTitleArgs = {
-    title: string;
-};
-
-export async function deleteTitle({ title }: DeleteTitleArgs) {
+export async function deleteTitle(title: ITitle) {
     const token = await getIdToken();
 
     const url = new URL(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/v1/library/delete-title/`);
-    url.searchParams.set('title_name', title);
+    url.searchParams.set('id', title.id);
 
     const res = await fetch(url, {
         method: 'DELETE',
