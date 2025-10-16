@@ -107,6 +107,7 @@ export function SignInForm() {
 
                 <Button
                     size='lg'
+                    variant='secondary'
                     onClick={signInWithGoogle}
                     className='w-full py-4 text-base md:py-6 md:text-lg'
                 >
