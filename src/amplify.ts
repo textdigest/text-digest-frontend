@@ -1,5 +1,5 @@
 import { NextServer, createServerRunner } from '@aws-amplify/adapter-nextjs';
-import { fetchAuthSession, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth/server';
+import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth/server';
 import { amplifyServerConfig } from './config/amplify.server.config';
 
 export const { runWithAmplifyServerContext } = createServerRunner({
@@ -18,8 +18,7 @@ export async function authenticatedUser(context: NextServer.Context) {
                 }
 
                 const user = await getCurrentUser(contextSpec);
-
-                const attributes = await fetchUserAttributes(contextSpec);
+                const attributes = session.tokens.idToken?.payload ?? null;
 
                 if (user) {
                     return {
