@@ -11,10 +11,12 @@ export interface ITitle {
     pages: number;
     date_published: string;
     date_downloaded: string;
-    is_public: boolean;
 
-    pdf_presigned_url: string;
-    parsed_pdf_presigned_url: string;
+    is_public: boolean;
+    is_processing: boolean;
+
+    pdf_presigned_url?: string;
+    parsed_pdf_presigned_url?: string;
 
     notes: {
         comment: string;

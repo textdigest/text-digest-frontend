@@ -4,6 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X } from 'lucide-react';
 
 import { postTitle } from '@/services/api/library/postTitle';
+import { ITitle } from '@/types/library';
 
 import {
     Dialog,
@@ -16,7 +17,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-export function UploadTitleDialog() {
+export function UploadTitleDialog({
+    onUploadComplete,
+}: {
+    onUploadComplete: (title: ITitle) => void;
+}) {
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
     const [open, setOpen] = useState<boolean>(false);
@@ -48,15 +53,26 @@ export function UploadTitleDialog() {
     async function handleUpload() {
         setIsUploading(true);
         if (file) {
-            await postTitle({
-                title,
-                file,
-                author,
-                datePublished,
-                pages,
-            });
+            try {
+                const newTitle = await postTitle({
+                    title,
+                    file,
+                    author,
+                    datePublished,
+                    pages,
+                });
+
+                if (newTitle) {
+                    onUploadComplete(newTitle);
+                }
+
+                handleReset();
+            } catch (error) {
+                console.error('Upload failed:', error);
+            } finally {
+                setIsUploading(false);
+            }
         }
-        setIsUploading(false);
     }
 
     function handleReset() {

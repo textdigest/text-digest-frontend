@@ -107,15 +107,12 @@ function ReaderContent() {
             if (!titleId || !isPublic) return;
 
             const title = await getTitle(titleId, isPublic);
-
-            if (!title) return;
-
-            setTitle(title);
+            if (!title || !title.parsed_pdf_presigned_url) return;
 
             const res = await fetch(title.parsed_pdf_presigned_url);
-
             const doc: Document = await res.json();
 
+            setTitle(title);
             setAssets(doc.assets || []);
             setMetadata(doc.metadata);
         }
@@ -201,6 +198,11 @@ function ReaderContent() {
                                             </h1>
                                         ),
                                         p: ({ children }) => (
+                                            <div className='my-2 text-lg text-neutral-400'>
+                                                {children}
+                                            </div>
+                                        ),
+                                        li: ({ children }) => (
                                             <div className='my-2 text-lg text-neutral-400'>
                                                 {children}
                                             </div>
