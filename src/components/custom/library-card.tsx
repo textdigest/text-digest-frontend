@@ -1,8 +1,6 @@
 'use client';
 import { ITitle } from '@/types/library';
-import { EllipsisVertical, Trash2 } from 'lucide-react';
-import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
+import { EllipsisVertical, Trash2, FileText } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 import {
@@ -12,18 +10,6 @@ import {
     MenubarMenu,
     MenubarTrigger,
 } from '@/components/ui/menubar';
-
-const PdfDocument = dynamic(
-    () =>
-        import('react-pdf').then(async (mod) => {
-            const pdfjs = await import('pdfjs-dist');
-            pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-            return mod.Document;
-        }),
-    { ssr: false },
-);
-
-const PdfPage = dynamic(() => import('react-pdf').then((mod) => mod.Page), { ssr: false });
 
 export function LibraryCard({
     title,
@@ -40,23 +26,8 @@ export function LibraryCard({
             key={title.id}
             onClick={() => router.push(`/reader?tid=${title.id}&is_public=${title.is_public}`)}
         >
-            <main className='flex h-full items-baseline justify-center overflow-hidden'>
-                <Suspense
-                    fallback={
-                        <div className='flex h-full w-full items-center justify-center'>
-                            <div className='h-64 w-48 animate-pulse bg-neutral-800' />
-                        </div>
-                    }
-                >
-                    <PdfDocument file={title.pdf_presigned_url}>
-                        <PdfPage
-                            pageNumber={1}
-                            width={256}
-                            renderTextLayer={false}
-                            renderAnnotationLayer={false}
-                        />
-                    </PdfDocument>
-                </Suspense>
+            <main className='flex h-full items-center justify-center overflow-hidden bg-neutral-800'>
+                <FileText className='h-32 w-32 text-neutral-600' />
             </main>
 
             <footer className='relative flex h-36 flex-col gap-1 p-2'>
