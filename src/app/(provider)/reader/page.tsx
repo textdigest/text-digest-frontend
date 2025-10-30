@@ -145,7 +145,7 @@ function ReaderContent() {
     if (!title || !metadata.length) return <div>No document</div>;
 
     return (
-        <div className='relative flex h-screen w-screen flex-col overflow-hidden dark:bg-black'>
+        <div className='relative flex h-[100svh] w-[100svw] flex-col overflow-hidden dark:bg-black'>
             <nav className='flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
                 <Button onClick={() => router.push('/library')} variant='ghost'>
                     <Undo2 />
