@@ -5,9 +5,6 @@ import { Upload, FileText, X } from 'lucide-react';
 
 import { postTitle } from '@/services/api/library/postTitle';
 
-import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-
 import {
     Dialog,
     DialogContent,
@@ -45,31 +42,7 @@ export function UploadTitleDialog() {
     });
 
     async function extractMetadata(pdfFile: File) {
-        try {
-            const arrayBuffer = await pdfFile.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-            const metadata = await pdf.getMetadata();
-            const numPages = pdf.numPages;
-
-            setPages(numPages);
-
-            if (metadata.info) {
-                // TODO: None of this ever exists in PDF metadata. Need to use NLP on backend to xtract this.
-                const info = metadata.info as any;
-                if (info.Title && !title) setTitle(info.Title);
-                if (info.Author) setAuthor(info.Author);
-                if (info.CreationDate) {
-                    const dateStr = info.CreationDate.toString();
-                    const match = dateStr.match(/D:(\d{4})(\d{2})(\d{2})/);
-                    if (match) {
-                        setDatePublished(`${match[1]}-${match[2]}-${match[3]}`);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Failed to extract PDF metadata:', error);
-        }
+        setPages(0);
     }
 
     async function handleUpload() {
