@@ -3,7 +3,7 @@ import { ITitle } from '@/types/library';
 import { EllipsisVertical, Trash2 } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
-import { Document, Page as ReactPdfPage, pdfjs } from 'react-pdf';
+import dynamic from 'next/dynamic';
 import {
     Menubar,
     MenubarContent,
@@ -12,7 +12,14 @@ import {
     MenubarTrigger,
 } from '@/components/ui/menubar';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+const PdfViewer = dynamic(() => import('./pdf-viewer').then((mod) => mod.PdfViewer), {
+    ssr: false,
+    loading: () => (
+        <div className='flex h-full w-full items-center justify-center'>
+            <div className='h-64 w-48 animate-pulse bg-neutral-800' />
+        </div>
+    ),
+});
 
 export function LibraryCard({
     title,
@@ -30,14 +37,7 @@ export function LibraryCard({
             onClick={() => router.push(`/reader?tid=${title.id}&is_public=${title.is_public}`)}
         >
             <main className='flex h-full items-baseline justify-center overflow-hidden'>
-                <Document file={title.pdf_presigned_url}>
-                    <ReactPdfPage
-                        pageNumber={1}
-                        width={256}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                    />
-                </Document>
+                <PdfViewer url={String(title.pdf_presigned_url)} />
             </main>
 
             <footer className='relative flex h-36 flex-col gap-1 p-2'>
