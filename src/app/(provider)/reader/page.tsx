@@ -2,8 +2,11 @@
 import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
+import { EllipsisVertical, Undo2, Book } from 'lucide-react';
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useVirtualizer } from '@tanstack/react-virtual';
+
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,15 +19,12 @@ import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.css';
 
 import { getTitle } from '@/services/api/library/getTitle';
+
 import { useMarkdown } from '@/hooks/ereader/useMarkdown';
-import { useViewport } from '@/hooks/useViewport';
-import { usePageNumber } from '@/hooks/ereader/usePageNumber';
 
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 
 import { Literata } from 'next/font/google';
-import { EllipsisVertical, Undo2 } from 'lucide-react';
 
 const literata = Literata({
     subsets: ['latin'],
@@ -34,9 +34,7 @@ const literata = Literata({
 });
 
 export default function Page() {
-    const ref = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
-    const viewport = useViewport();
     const router = useRouter();
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -44,16 +42,62 @@ export default function Page() {
 
     const [assets, setAssets] = useState<Asset[]>([]);
     const [metadata, setMetadata] = useState<Metadata[]>([]);
+
     const { pages } = useMarkdown(metadata);
+    const parentRef = useRef<HTMLDivElement>(null);
 
-    const [iterator, setIterator] = useState<number>(0);
+    const virtualizer = useVirtualizer({
+        count: pages.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 1000,
+        overscan: 8,
+    });
 
-    const p1 = pages[iterator - 1] || '';
-    const curr = pages[iterator] || '';
-    const n1 = pages[iterator + 1] || '';
-    const merged = [p1, curr, n1].join('\n');
+    const [pageNumber, setPageNumber] = useState<number | null>(null);
 
-    const pageNumber = usePageNumber(ref, [merged]);
+    useEffect(() => {
+        const container = parentRef.current;
+        if (!container) return;
+
+        function updatePageNumber() {
+            if (!container) return;
+            const virtualItems = virtualizer.getVirtualItems();
+
+            if (virtualItems.length === 0) return;
+
+            const viewportHeight = container.clientHeight;
+            const scrollTop = container.scrollTop;
+            const viewportCenter = scrollTop + viewportHeight / 2;
+
+            let closestItem = virtualItems[0];
+            let closestDistance = Math.abs(
+                virtualItems[0].start +
+                    (virtualItems[0].end - virtualItems[0].start) / 2 -
+                    viewportCenter,
+            );
+
+            for (const item of virtualItems) {
+                const itemCenter = item.start + (item.end - item.start) / 2;
+                const distance = Math.abs(itemCenter - viewportCenter);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestItem = item;
+                }
+            }
+
+            setPageNumber(closestItem.index);
+        }
+
+        updatePageNumber();
+
+        container.addEventListener('scroll', updatePageNumber, { passive: true });
+        window.addEventListener('resize', updatePageNumber);
+
+        return () => {
+            container.removeEventListener('scroll', updatePageNumber);
+            window.removeEventListener('resize', updatePageNumber);
+        };
+    }, [virtualizer, pages.length]);
 
     useEffect(() => {
         async function init() {
@@ -88,14 +132,20 @@ export default function Page() {
         return src;
     }
 
-    if (isLoading) return <div>Loading</div>;
+    if (isLoading)
+        return (
+            <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                <Book className='mb-4 h-12 w-12 animate-pulse' />
+                <span className='animate-pulse text-xl font-medium'>
+                    Loading your book. Just a moment...
+                </span>
+            </div>
+        );
 
     if (!title || !metadata.length) return <div>No document</div>;
 
-    const gap = viewport.w >= 1280 ? 128 : 128;
-
     return (
-        <div className='scrollbar-none relative h-screen w-screen overflow-hidden dark:bg-black'>
+        <div className='relative flex h-screen w-screen flex-col overflow-hidden dark:bg-black'>
             <nav className='flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
                 <Button onClick={() => router.push('/library')} variant='ghost'>
                     <Undo2 />
@@ -110,138 +160,131 @@ export default function Page() {
                 </Button>
             </nav>
 
-            <main className='relative flex h-full w-full justify-center'>
-                <div className='h-full w-full'>
+            <main className='relative flex min-h-0 w-full flex-1 justify-center overflow-hidden'>
+                <div
+                    ref={parentRef}
+                    className={`h-full ${literata.className} scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
+                >
                     <div
-                        className={`${literata.className} pt-4 pb-36 break-words lg:pt-8`}
                         style={{
-                            height: viewport.h,
-                            width: viewport.w,
-                            columnWidth: viewport.w,
-                            columnGap: gap,
-                            columns: viewport.w >= 1280 ? 2 : 1,
-                            columnFill: 'auto' as any,
-                            paddingLeft: gap / 2,
-                            paddingRight: gap / 2,
+                            height: `${virtualizer.getTotalSize()}px`,
+                            width: '100%',
+                            position: 'relative',
                         }}
-                        ref={ref}
                     >
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[
-                                rehypeRaw,
-                                rehypeKatex,
-                                rehypeSlug,
-                                rehypeAutolinkHeadings,
-                                [rehypeHighlight, { ignoreMissing: true }],
-                            ]}
-                            components={{
-                                h1: ({ children }) => (
-                                    <h1 className='mb-2 break-inside-avoid text-2xl font-semibold text-neutral-300'>
-                                        {children}
-                                    </h1>
-                                ),
-                                p: ({ children }) => (
-                                    <div className='my-2 text-lg text-neutral-400'>
-                                        {children}
-                                    </div>
-                                ),
-                                table: ({ children }) => (
-                                    <table className='my-4 w-full border-collapse break-inside-avoid text-sm'>
-                                        {children}
-                                    </table>
-                                ),
-                                thead: ({ children }) => (
-                                    <thead className='break-inside-avoid bg-gray-100 dark:bg-neutral-800'>
-                                        {children}
-                                    </thead>
-                                ),
-                                tr: ({ children }) => (
-                                    <tr className='break-inside-avoid border-b border-gray-200 dark:border-neutral-800'>
-                                        {children}
-                                    </tr>
-                                ),
-                                th: ({ children }) => (
-                                    <th className='break-inside-avoid px-2 py-1 text-left font-semibold'>
-                                        {children}
-                                    </th>
-                                ),
-                                td: ({ children }) => (
-                                    <td className='break-inside-avoid px-2 py-1 align-top'>
-                                        {children}
-                                    </td>
-                                ),
-                                img: ({ src, title }) => (
-                                    <span className='break-inside-avoid'>
-                                        <Figure
-                                            src={getAssetSrc(src as string)}
-                                            caption={title as string}
-                                        />
-                                    </span>
-                                ),
-                                code: (props: any) => {
-                                    const { inline, className, children, ...rest } = props;
-
-                                    if (!inline) {
-                                        const metdataPageIdx = Number(children);
-
-                                        return (
-                                            <span
-                                                data-page-index={`${metdataPageIdx}`}
-                                                style={{
-                                                    display: 'block',
-                                                    height: '1px',
-                                                    opacity: 0,
-                                                }}
-                                            >
-                                                {metdataPageIdx}
+                        {virtualizer.getVirtualItems().map((virtualItem) => (
+                            <div
+                                key={virtualItem.key}
+                                data-index={virtualItem.index}
+                                ref={virtualizer.measureElement}
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    transform: `translateY(${virtualItem.start}px)`,
+                                }}
+                            >
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm, remarkMath]}
+                                    rehypePlugins={[
+                                        rehypeRaw,
+                                        rehypeKatex,
+                                        rehypeSlug,
+                                        rehypeAutolinkHeadings,
+                                        [rehypeHighlight, { ignoreMissing: true }],
+                                    ]}
+                                    components={{
+                                        h1: ({ children }) => (
+                                            <h1 className='mb-2 break-inside-avoid text-2xl font-semibold text-neutral-300'>
+                                                {children}
+                                            </h1>
+                                        ),
+                                        p: ({ children }) => (
+                                            <div className='my-2 text-lg text-neutral-400'>
+                                                {children}
+                                            </div>
+                                        ),
+                                        table: ({ children }) => (
+                                            <table className='my-4 w-full border-collapse break-inside-avoid text-sm'>
+                                                {children}
+                                            </table>
+                                        ),
+                                        thead: ({ children }) => (
+                                            <thead className='break-inside-avoid bg-gray-100 dark:bg-neutral-800'>
+                                                {children}
+                                            </thead>
+                                        ),
+                                        tr: ({ children }) => (
+                                            <tr className='break-inside-avoid border-b border-gray-200 dark:border-neutral-800'>
+                                                {children}
+                                            </tr>
+                                        ),
+                                        th: ({ children }) => (
+                                            <th className='break-inside-avoid px-2 py-1 text-left font-semibold'>
+                                                {children}
+                                            </th>
+                                        ),
+                                        td: ({ children }) => (
+                                            <td className='break-inside-avoid px-2 py-1 align-top'>
+                                                {children}
+                                            </td>
+                                        ),
+                                        img: ({ src, title }) => (
+                                            <span className='break-inside-avoid'>
+                                                <Figure
+                                                    src={getAssetSrc(src as string)}
+                                                    caption={title as string}
+                                                />
                                             </span>
-                                        );
-                                    }
+                                        ),
+                                        code: (props: any) => {
+                                            const { inline, className, children, ...rest } =
+                                                props;
 
-                                    if (inline)
-                                        return (
-                                            <code className='break-inside-avoid rounded bg-neutral-800 px-1 py-0.5'>
-                                                {children}
-                                            </code>
-                                        );
+                                            if (!inline) {
+                                                const metdataPageIdx = Number(children);
 
-                                    return (
-                                        <pre className='my-4 break-inside-avoid overflow-x-auto rounded-md bg-neutral-900 p-3 text-xs break-words whitespace-pre-wrap'>
-                                            <code className={className} {...rest}>
-                                                {children}
-                                            </code>
-                                        </pre>
-                                    );
-                                },
-                            }}
-                        >
-                            {merged}
-                        </ReactMarkdown>
+                                                return (
+                                                    <span
+                                                        data-page-index={`${metdataPageIdx}`}
+                                                        style={{
+                                                            display: 'inline-block',
+                                                            height: '1px',
+                                                            opacity: 0,
+                                                        }}
+                                                    >
+                                                        {metdataPageIdx}
+                                                    </span>
+                                                );
+                                            }
+
+                                            if (inline)
+                                                return (
+                                                    <code className='break-inside-avoid rounded bg-neutral-800 px-1 py-0.5'>
+                                                        {children}
+                                                    </code>
+                                                );
+
+                                            return (
+                                                <pre className='my-4 break-inside-avoid overflow-x-auto rounded-md bg-neutral-900 p-3 text-xs break-words whitespace-pre-wrap'>
+                                                    <code className={className} {...rest}>
+                                                        {children}
+                                                    </code>
+                                                </pre>
+                                            );
+                                        },
+                                    }}
+                                >
+                                    {pages[virtualItem.index]}
+                                </ReactMarkdown>
+                            </div>
+                        ))}
                     </div>
                 </div>
-
-                <div
-                    onClick={() => setIterator(Math.max(0, iterator - 1))}
-                    className='absolute left-0 h-full w-[33%] bg-neutral-800/0'
-                />
-
-                <div
-                    onClick={() => setIterator(Math.min(pages.length - 1, iterator + 1))}
-                    className='absolute right-0 h-full w-[33%] bg-neutral-800/0'
-                />
             </main>
 
-            <footer className='absolute bottom-4 flex w-full flex-col items-center justify-center gap-4 px-32 text-center text-xs font-medium text-neutral-400'>
-                <Slider
-                    min={0}
-                    max={pages.length - 1}
-                    step={1}
-                    value={[iterator]}
-                    onValueChange={([v]) => setIterator(v)}
-                    className='w-full lg:max-w-1/2'
-                />
-
+            <footer className='flex w-full flex-col items-center justify-center gap-4 px-32 pt-8 pb-4 text-center text-xs font-medium text-neutral-400'>
                 <p>
                     Page {(pageNumber ?? 0) + 1} of {pages.length} •{' '}
                     {pages.length > 0
