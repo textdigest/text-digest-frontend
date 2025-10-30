@@ -3,7 +3,7 @@ import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
 import { EllipsisVertical, Undo2, Book } from 'lucide-react';
-import { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
@@ -33,7 +33,7 @@ const literata = Literata({
     display: 'swap',
 });
 
-export default function Page() {
+function ReaderContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
@@ -120,7 +120,7 @@ export default function Page() {
             setMetadata(doc.metadata);
         }
         init().then(() => setIsLoading(false));
-    }, []);
+    }, [searchParams]);
 
     function getAssetSrc(src?: string) {
         const m = new Map<string, string>();
@@ -324,5 +324,24 @@ function Figure({ src, caption }: { src: string; caption?: string }) {
                 </span>
             )}
         </span>
+    );
+}
+
+export const dynamic = 'force-dynamic';
+
+export default function Page() {
+    return (
+        <Suspense
+            fallback={
+                <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                    <Book className='mb-4 h-12 w-12 animate-pulse' />
+                    <span className='animate-pulse text-xl font-medium'>
+                        Loading your book. Just a moment...
+                    </span>
+                </div>
+            }
+        >
+            <ReaderContent />
+        </Suspense>
     );
 }
