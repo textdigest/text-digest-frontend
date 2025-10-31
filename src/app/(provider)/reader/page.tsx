@@ -12,6 +12,8 @@ import {
     Search,
     TableOfContents,
     Sidebar,
+    Plus,
+    Minus,
 } from 'lucide-react';
 import { useEffect, useRef, useState, useLayoutEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -37,8 +39,9 @@ import { Button } from '@/components/ui/button';
 import { Literata } from 'next/font/google';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { fontMap } from '@/hooks/reader/useReaderSettings';
+import { fontMap, pageColors } from '@/hooks/reader/useReaderSettings';
 import { useReaderSettings } from '@/hooks/reader/useReaderSettings';
+import { Separator } from '@/components/ui/separator';
 
 const literata = Literata({
     subsets: ['latin'],
@@ -70,7 +73,15 @@ function ReaderContent() {
     const [pageNumber, setPageNumber] = useState<number | null>(null);
 
     const [fontMenuOpen, setFontMenuOpen] = useState(false);
-    const { setFontName, fontClass } = useReaderSettings();
+    const {
+        setFontName,
+        fontClass,
+        increaseFont,
+        decreaseFont,
+        fontSize,
+        setPageColor,
+        pageColor,
+    } = useReaderSettings();
 
     useEffect(() => {
         const container = parentRef.current;
@@ -159,7 +170,9 @@ function ReaderContent() {
     if (!title || !metadata.length) return <div>No document</div>;
 
     return (
-        <div className='relative flex h-[100svh] w-[100svw] flex-col overflow-hidden dark:bg-black'>
+        <div
+            className={`relative flex h-[100svh] w-[100svw] flex-col overflow-hidden bg-${pageColor.bgColor}`}
+        >
             <nav className='z-50 flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
                 <Button onClick={() => router.push('/library')} variant='ghost'>
                     <Undo2 />
@@ -205,7 +218,7 @@ function ReaderContent() {
                             className='fixed top-0 right-0 z-40 h-full w-100 bg-neutral-900 p-6 pt-20 text-white shadow-xl'
                         >
                             <h1>Font</h1>
-                            <div className='flex items-center gap-6'>
+                            <div className='mt-5 flex items-center gap-6'>
                                 {Object.entries(fontMap).map(([name, nextFont]) => (
                                     <Button
                                         key={name}
@@ -226,6 +239,27 @@ function ReaderContent() {
                                         </span>
                                         <span className='capitalize'>{name}</span>
                                     </Button>
+                                ))}
+                            </div>
+                            <Separator className='my-5' />
+                            <h1>Font Size</h1>
+                            <div className='mt-5 flex items-center gap-6'>
+                                <Button variant='ghost' onClick={increaseFont}>
+                                    <Plus />
+                                </Button>
+                                <Button variant='ghost' onClick={decreaseFont}>
+                                    <Minus />
+                                </Button>
+                            </div>
+                            <Separator className='my-5' />
+                            <h1>Page Color</h1>
+                            <div className='mt-5 flex items-center gap-6'>
+                                {pageColors.map((color, index) => (
+                                    <Button
+                                        key={index}
+                                        className={`rounded-full bg-${color.bgColor} border border-neutral-500`}
+                                        onClick={() => setPageColor(color)}
+                                    />
                                 ))}
                             </div>
                         </motion.aside>
@@ -267,21 +301,33 @@ function ReaderContent() {
                                     components={{
                                         h1: ({ children }) => (
                                             <h1
-                                                className={`mb-2 break-inside-avoid text-2xl font-semibold text-neutral-300 ${fontClass}`}
+                                                className={`mb-2 break-inside-avoid text-2xl font-semibold ${fontClass}`}
+                                                style={{
+                                                    fontSize: `${fontSize}px`,
+                                                    color: pageColor.headingColor,
+                                                }}
                                             >
                                                 {children}
                                             </h1>
                                         ),
                                         p: ({ children }) => (
                                             <div
-                                                className={`my-2 text-lg text-neutral-400 ${fontClass}`}
+                                                className={`my-2 text-lg ${fontClass}`}
+                                                style={{
+                                                    fontSize: `${fontSize}px`,
+                                                    color: pageColor.textColor,
+                                                }}
                                             >
                                                 {children}
                                             </div>
                                         ),
                                         li: ({ children }) => (
                                             <div
-                                                className={`my-2 text-lg text-neutral-400 ${fontClass}`}
+                                                className={`my-2 text-lg ${fontClass}`}
+                                                style={{
+                                                    fontSize: `${fontSize}px`,
+                                                    color: pageColor.textColor,
+                                                }}
                                             >
                                                 {children}
                                             </div>

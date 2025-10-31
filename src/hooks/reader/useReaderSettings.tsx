@@ -12,9 +12,28 @@ export const fontMap = {
     robotoMono,
 };
 
+type PageColor = {
+    bgColor: string;
+    textColor: string;
+    headingColor: string;
+};
+
+const pageColorWhite: PageColor = {
+    bgColor: 'white',
+    textColor: 'black',
+    headingColor: '#5e5e5eff',
+};
+const pageColorBlack: PageColor = {
+    bgColor: 'black',
+    textColor: '#a3a3a3',
+    headingColor: '#d4d4d4',
+};
+export const pageColors = [pageColorWhite, pageColorBlack];
+
 export function useReaderSettings() {
     const [font, setFont] = useState<FontOption>('inter');
     const [fontSize, setFontSize] = useState<number>(16);
+    const [pageColor, setPageColor] = useState<PageColor>(pageColorBlack);
 
     const toggleFont = () => {
         const fonts: FontOption[] = ['inter', 'robotoMono'];
@@ -24,7 +43,6 @@ export function useReaderSettings() {
 
     const setFontName = (fontName: FontOption) => {
         setFont(fontName);
-        console.log(fontName);
     };
 
     const increaseFont = () => setFontSize((s) => Math.min(s + 2, 32));
@@ -40,5 +58,7 @@ export function useReaderSettings() {
         increaseFont,
         decreaseFont,
         setFontName,
+        pageColor,
+        setPageColor,
     };
 }
