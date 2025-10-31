@@ -22,6 +22,11 @@ export function useReaderSettings() {
         setFont(fonts[nextIndex]);
     };
 
+    const setFontName = (fontName: FontOption) => {
+        setFont(fontName);
+        console.log(fontName);
+    };
+
     const increaseFont = () => setFontSize((s) => Math.min(s + 2, 32));
     const decreaseFont = () => setFontSize((s) => Math.max(s - 2, 10));
 
@@ -34,5 +39,6 @@ export function useReaderSettings() {
         toggleFont,
         increaseFont,
         decreaseFont,
+        setFontName,
     };
 }

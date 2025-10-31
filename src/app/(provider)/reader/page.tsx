@@ -2,7 +2,17 @@
 import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
-import { EllipsisVertical, Undo2, Book } from 'lucide-react';
+import {
+    EllipsisVertical,
+    Undo2,
+    Book,
+    Expand,
+    CaseSensitive,
+    Notebook,
+    Search,
+    TableOfContents,
+    Sidebar,
+} from 'lucide-react';
 import { useEffect, useRef, useState, useLayoutEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -25,6 +35,10 @@ import { useMarkdown } from '@/hooks/ereader/useMarkdown';
 import { Button } from '@/components/ui/button';
 
 import { Literata } from 'next/font/google';
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { fontMap } from '@/hooks/reader/useReaderSettings';
+import { useReaderSettings } from '@/hooks/reader/useReaderSettings';
 
 const literata = Literata({
     subsets: ['latin'],
@@ -54,6 +68,9 @@ function ReaderContent() {
     });
 
     const [pageNumber, setPageNumber] = useState<number | null>(null);
+
+    const [fontMenuOpen, setFontMenuOpen] = useState(false);
+    const { setFontName, fontClass } = useReaderSettings();
 
     useEffect(() => {
         const container = parentRef.current;
@@ -143,7 +160,7 @@ function ReaderContent() {
 
     return (
         <div className='relative flex h-[100svh] w-[100svw] flex-col overflow-hidden dark:bg-black'>
-            <nav className='flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
+            <nav className='z-50 flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
                 <Button onClick={() => router.push('/library')} variant='ghost'>
                     <Undo2 />
                     Return
@@ -151,13 +168,69 @@ function ReaderContent() {
 
                 <h1 className='uppercase'>{title.title}</h1>
 
-                <Button variant='ghost'>
-                    {/* TODO */}
-                    <EllipsisVertical />
-                </Button>
+                <div>
+                    <Button variant='ghost' className='mx-2'>
+                        <TableOfContents />
+                    </Button>
+                    <Button variant='ghost' className='mx-2'>
+                        <Search />
+                    </Button>
+                    <Button
+                        variant='ghost'
+                        className='mx-2'
+                        onClick={() => setFontMenuOpen(!fontMenuOpen)}
+                    >
+                        <CaseSensitive />
+                    </Button>
+                    <Button variant='ghost' className='mx-2'>
+                        <Notebook />
+                    </Button>
+                    <Button variant='ghost' className='mx-2'>
+                        <Expand />
+                    </Button>
+                    <Button variant='ghost' className='mx-2'>
+                        <EllipsisVertical />
+                    </Button>
+                </div>
             </nav>
 
             <main className='relative flex min-h-0 w-full flex-1 justify-center overflow-hidden'>
+                <AnimatePresence>
+                    {fontMenuOpen && (
+                        <motion.aside
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            className='fixed top-0 right-0 z-40 h-full w-100 bg-neutral-900 p-6 pt-20 text-white shadow-xl'
+                        >
+                            <h1>Font</h1>
+                            <div className='flex items-center gap-6'>
+                                {Object.entries(fontMap).map(([name, nextFont]) => (
+                                    <Button
+                                        key={name}
+                                        variant={
+                                            fontClass == nextFont.className
+                                                ? 'outline'
+                                                : 'ghost'
+                                        }
+                                        className={`capitalize ${nextFont.className || ''}`}
+                                        onClick={() =>
+                                            setFontName(
+                                                name as Parameters<typeof setFontName>[0],
+                                            )
+                                        }
+                                    >
+                                        <span className={`${nextFont.className || ''} mr-2`}>
+                                            Aa
+                                        </span>
+                                        <span className='capitalize'>{name}</span>
+                                    </Button>
+                                ))}
+                            </div>
+                        </motion.aside>
+                    )}
+                </AnimatePresence>
                 <div
                     ref={parentRef}
                     className={`h-full ${literata.className} scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
@@ -193,17 +266,23 @@ function ReaderContent() {
                                     ]}
                                     components={{
                                         h1: ({ children }) => (
-                                            <h1 className='mb-2 break-inside-avoid text-2xl font-semibold text-neutral-300'>
+                                            <h1
+                                                className={`mb-2 break-inside-avoid text-2xl font-semibold text-neutral-300 ${fontClass}`}
+                                            >
                                                 {children}
                                             </h1>
                                         ),
                                         p: ({ children }) => (
-                                            <div className='my-2 text-lg text-neutral-400'>
+                                            <div
+                                                className={`my-2 text-lg text-neutral-400 ${fontClass}`}
+                                            >
                                                 {children}
                                             </div>
                                         ),
                                         li: ({ children }) => (
-                                            <div className='my-2 text-lg text-neutral-400'>
+                                            <div
+                                                className={`my-2 text-lg text-neutral-400 ${fontClass}`}
+                                            >
                                                 {children}
                                             </div>
                                         ),
