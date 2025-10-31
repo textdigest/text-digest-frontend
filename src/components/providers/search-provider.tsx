@@ -6,6 +6,8 @@ interface SearchContextType {
     setSearchTerm: (term: string) => void;
     initSearch: <T>(data: T[], searchKeys: (keyof T)[]) => void;
     search: <T>() => T[];
+    addItem: <T>(item: T) => void;
+    updateItem: <T>(id: string, updater: (item: T) => T) => void;
 }
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined);
@@ -24,6 +26,21 @@ export function SearchProvider({ children }: SearchProviderProps) {
         setSearchKeys(keys as string[]);
     };
 
+    const addItem = <T,>(item: T) => {
+        setSearchableData((prev) => [...prev, item]);
+    };
+
+    const updateItem = <T,>(id: string, updater: (item: T) => T) => {
+        setSearchableData((prev) =>
+            prev.map((item) => {
+                if ((item as any).id === id) {
+                    return updater(item as T);
+                }
+                return item;
+            }),
+        );
+    };
+
     const search = <T,>(): T[] => {
         if (!searchTerm) return searchableData as T[];
 
@@ -36,7 +53,9 @@ export function SearchProvider({ children }: SearchProviderProps) {
     };
 
     return (
-        <SearchContext.Provider value={{ searchTerm, setSearchTerm, initSearch, search }}>
+        <SearchContext.Provider
+            value={{ searchTerm, setSearchTerm, initSearch, search, addItem, updateItem }}
+        >
             {children}
         </SearchContext.Provider>
     );

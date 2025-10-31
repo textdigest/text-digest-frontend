@@ -4,9 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, X } from 'lucide-react';
 
 import { postTitle } from '@/services/api/library/postTitle';
-
-import * as pdfjsLib from 'pdfjs-dist';
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+import { ITitle } from '@/types/library';
 
 import {
     Dialog,
@@ -19,7 +17,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-export function UploadTitleDialog() {
+export function UploadTitleDialog({
+    onUploadComplete,
+}: {
+    onUploadComplete: (title: ITitle) => void;
+}) {
     const [isUploading, setIsUploading] = useState<boolean>(false);
 
     const [open, setOpen] = useState<boolean>(false);
@@ -45,45 +47,32 @@ export function UploadTitleDialog() {
     });
 
     async function extractMetadata(pdfFile: File) {
-        try {
-            const arrayBuffer = await pdfFile.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-            const metadata = await pdf.getMetadata();
-            const numPages = pdf.numPages;
-
-            setPages(numPages);
-
-            if (metadata.info) {
-                // TODO: None of this ever exists in PDF metadata. Need to use NLP on backend to xtract this.
-                const info = metadata.info as any;
-                if (info.Title && !title) setTitle(info.Title);
-                if (info.Author) setAuthor(info.Author);
-                if (info.CreationDate) {
-                    const dateStr = info.CreationDate.toString();
-                    const match = dateStr.match(/D:(\d{4})(\d{2})(\d{2})/);
-                    if (match) {
-                        setDatePublished(`${match[1]}-${match[2]}-${match[3]}`);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Failed to extract PDF metadata:', error);
-        }
+        setPages(0);
     }
 
     async function handleUpload() {
         setIsUploading(true);
         if (file) {
-            await postTitle({
-                title,
-                file,
-                author,
-                datePublished,
-                pages,
-            });
+            try {
+                const newTitle = await postTitle({
+                    title,
+                    file,
+                    author,
+                    datePublished,
+                    pages,
+                });
+
+                if (newTitle) {
+                    onUploadComplete(newTitle);
+                }
+
+                handleReset();
+            } catch (error) {
+                console.error('Upload failed:', error);
+            } finally {
+                setIsUploading(false);
+            }
         }
-        setIsUploading(false);
     }
 
     function handleReset() {

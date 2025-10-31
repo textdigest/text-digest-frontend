@@ -7,6 +7,7 @@ import {
     signUp as amplifySignUp,
     signInWithRedirect,
     confirmSignIn,
+    fetchAuthSession,
 } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import ConfigureAmplifyClientSide from '@/config/amplify.client.config';
@@ -34,6 +35,27 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const router = useRouter();
     const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
+
+    useEffect(() => {
+        const handleOAuthRedirect = async () => {
+            if (typeof window === 'undefined') return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasOAuthParams = urlParams.has('code') || urlParams.has('state');
+
+            if (hasOAuthParams) {
+                try {
+                    await fetchAuthSession();
+                    window.history.replaceState({}, '', '/library');
+                    window.location.reload();
+                } catch (error) {
+                    console.error('OAuth redirect handling failed:', error);
+                }
+            }
+        };
+
+        handleOAuthRedirect();
+    }, []);
 
     useEffect(() => {
         console.log(isOtpSent);

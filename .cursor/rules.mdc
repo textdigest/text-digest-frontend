@@ -24,3 +24,4 @@ alwaysApply: true
   functions when possible.
 - **NEVER** add comments to codebase.
 - **NEVER** delete or modify existant comments from codebase.
+- **NEVER** add useMemo, useCallback unless explicitally asked.

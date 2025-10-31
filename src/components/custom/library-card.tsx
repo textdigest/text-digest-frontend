@@ -1,9 +1,8 @@
 'use client';
 import { ITitle } from '@/types/library';
-import { EllipsisVertical, Trash2 } from 'lucide-react';
+import { EllipsisVertical, Trash2, FileText } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
-import { Document, Page as ReactPdfPage, pdfjs } from 'react-pdf';
 import {
     Menubar,
     MenubarContent,
@@ -11,8 +10,6 @@ import {
     MenubarMenu,
     MenubarTrigger,
 } from '@/components/ui/menubar';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function LibraryCard({
     title,
@@ -25,28 +22,34 @@ export function LibraryCard({
 
     return (
         <div
-            className='flex h-96 w-64 flex-col justify-between shadow-lg dark:bg-neutral-900'
+            className={`flex flex-1 flex-col justify-between shadow-lg dark:bg-neutral-900 ${title.is_processing ? 'pointer-events-none opacity-60' : ''}`}
             key={title.id}
-            onClick={() => router.push(`/reader?tid=${title.id}&is_public=${title.is_public}`)}
+            onClick={
+                title.is_processing
+                    ? undefined
+                    : () => router.push(`/reader?tid=${title.id}&is_public=${title.is_public}`)
+            }
+            aria-disabled={title.is_processing}
         >
-            <main className='flex h-full items-baseline justify-center overflow-hidden'>
-                <Document file={title.pdf_presigned_url}>
-                    <ReactPdfPage
-                        pageNumber={1}
-                        width={256}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
-                    />
-                </Document>
+            <main className='flex h-full items-center justify-center overflow-hidden bg-neutral-800'>
+                {title.is_processing ? (
+                    <div className='flex h-32 w-32 flex-col items-center justify-center gap-2 p-2 text-center text-sm'>
+                        <FileText className='animate-bounce' />
+                        <p className='font-medium'>Processing</p>
+                    </div>
+                ) : (
+                    <FileText className='h-32 w-32 text-neutral-600' />
+                )}
             </main>
 
             <footer className='relative flex h-36 flex-col gap-1 p-2'>
-                <p className='line-clamp-2 font-semibold dark:text-neutral-200'>
+                <p className='line-clamp-2 text-sm font-semibold lg:text-base dark:text-neutral-200'>
                     {title.title}
                 </p>
                 <p className='mt-auto line-clamp-2 text-sm font-medium dark:text-neutral-400'>
                     {title.author}
                 </p>
+
                 <Menubar
                     className='absolute right-2 bottom-2 border-0 bg-transparent p-0 shadow-none'
                     onClick={(e) => e.stopPropagation()}

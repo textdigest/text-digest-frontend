@@ -19,7 +19,8 @@ export function AuthCopy() {
                     </span>
                 </p>
             </div>
-            <ul className='grid grid-cols-2 gap-4 lg:flex lg:flex-col'>
+            {/** grid grid-cols-2 gap-4 */}
+            <ul className='hidden lg:flex lg:flex-col'>
                 <li className='flex items-center gap-2'>
                     <Check
                         className='size-4 text-green-500 lg:size-8 dark:text-green-300'
