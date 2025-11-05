@@ -142,11 +142,16 @@ export const WebsocketProvider: React.FC<{ children: ReactNode }> = ({ children 
 
     const reconnect = (): Promise<void> =>
         connected.current
-            ? Promise.resolve()
+            ? Promise.resolve().then(() => {
+                  console.log('Reconnection skipped: already connected.');
+              })
             : new Promise((resolve) => {
                   const interval = setInterval(() => {
                       if (connected.current) {
                           clearInterval(interval);
+                          console.log(
+                              'Reconnection successful: connected.current is now true.',
+                          );
                           resolve();
                       }
                   }, 25);

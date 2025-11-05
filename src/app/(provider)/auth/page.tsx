@@ -1,6 +1,6 @@
 'use client';
-import { AuthCopy as Copywrite } from '@/components/custom/auth-copywrite';
-import { SignInForm } from '@/components/custom/auth-form';
+import { AuthCopy as Copywrite } from '@/components/custom/auth/auth-copywrite';
+import { SignInForm } from '@/components/custom/auth/auth-form';
 import { Logo } from '@/svg/logo';
 
 export default function Page() {

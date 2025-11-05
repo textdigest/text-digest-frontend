@@ -2,7 +2,7 @@
 import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
-import { EllipsisVertical, Undo2, Book } from 'lucide-react';
+import { EllipsisVertical, Undo2, Book, CaseSensitive, Notebook, Search } from 'lucide-react';
 import { useEffect, useRef, useState, useLayoutEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -20,18 +20,14 @@ import 'highlight.js/styles/github-dark.css';
 
 import { getTitle } from '@/services/api/library/getTitle';
 
-import { useMarkdown } from '@/hooks/ereader/useMarkdown';
+import { useMarkdown } from '@/hooks/reader/useMarkdown';
+import { useReaderSettings, ReaderSettingsProvider } from '@/hooks/reader/useReaderSettings';
+import { QnAProvider } from '@/hooks/reader/useQnA';
 
 import { Button } from '@/components/ui/button';
-
-import { Literata } from 'next/font/google';
-
-const literata = Literata({
-    subsets: ['latin'],
-    weight: ['300', '400', '500', '600', '700', '900'],
-    style: ['normal', 'italic'],
-    display: 'swap',
-});
+import { FontSettings } from '@/components/custom/reader/FontSettings';
+import { TextSelectionMenu } from '@/components/custom/reader/TextSelectionMenu';
+import { QnA } from '@/components/custom/reader/QnA';
 
 function ReaderContent() {
     const searchParams = useSearchParams();
@@ -54,6 +50,10 @@ function ReaderContent() {
     });
 
     const [pageNumber, setPageNumber] = useState<number | null>(null);
+
+    const [fontMenuOpen, setFontMenuOpen] = useState(false);
+
+    const { fontClass, fontSize, pageColor } = useReaderSettings();
 
     useEffect(() => {
         const container = parentRef.current;
@@ -142,8 +142,10 @@ function ReaderContent() {
     if (!title || !metadata.length) return <div>No document</div>;
 
     return (
-        <div className='relative flex h-[100svh] w-[100svw] flex-col overflow-hidden dark:bg-black'>
-            <nav className='flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
+        <div
+            className={`relative flex h-[100svh] w-[100svw] flex-col overflow-hidden bg-${pageColor.bgColor}`}
+        >
+            <nav className='z-50 flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
                 <Button onClick={() => router.push('/library')} variant='ghost'>
                     <Undo2 />
                     Return
@@ -151,16 +153,35 @@ function ReaderContent() {
 
                 <h1 className='uppercase'>{title.title}</h1>
 
-                <Button variant='ghost'>
-                    {/* TODO */}
+                <div className='hidden items-center gap-2 lg:flex'>
+                    <Button variant='ghost' className='mx-2'>
+                        <Search />
+                    </Button>
+                    <Button
+                        variant='ghost'
+                        className='mx-2'
+                        onClick={() => setFontMenuOpen(!fontMenuOpen)}
+                    >
+                        <CaseSensitive />
+                    </Button>
+                    <Button variant='ghost' className='mx-2'>
+                        <Notebook />
+                    </Button>
+                </div>
+
+                <Button variant='ghost' className='mx-2 lg:hidden'>
                     <EllipsisVertical />
                 </Button>
             </nav>
 
             <main className='relative flex min-h-0 w-full flex-1 justify-center overflow-hidden'>
+                <FontSettings isOpen={fontMenuOpen} onClose={() => setFontMenuOpen(false)} />
+                <QnA />
+                <TextSelectionMenu />
+
                 <div
                     ref={parentRef}
-                    className={`h-full ${literata.className} scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
+                    className={`scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 h-full w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
                 >
                     <div
                         style={{
@@ -185,25 +206,43 @@ function ReaderContent() {
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm, remarkMath]}
                                     rehypePlugins={[
-                                        rehypeRaw,
                                         rehypeKatex,
+                                        rehypeRaw,
                                         rehypeSlug,
                                         rehypeAutolinkHeadings,
                                         [rehypeHighlight, { ignoreMissing: true }],
                                     ]}
                                     components={{
                                         h1: ({ children }) => (
-                                            <h1 className='mb-2 break-inside-avoid text-2xl font-semibold text-neutral-300'>
+                                            <h1
+                                                className={`mb-2 break-inside-avoid text-2xl font-semibold ${fontClass}`}
+                                                style={{
+                                                    fontSize: `${fontSize}px`,
+                                                    color: pageColor.headingColor,
+                                                }}
+                                            >
                                                 {children}
                                             </h1>
                                         ),
                                         p: ({ children }) => (
-                                            <div className='my-2 text-lg text-neutral-400'>
+                                            <div
+                                                className={`my-2 text-lg ${fontClass}`}
+                                                style={{
+                                                    fontSize: `${fontSize}px`,
+                                                    color: pageColor.textColor,
+                                                }}
+                                            >
                                                 {children}
                                             </div>
                                         ),
                                         li: ({ children }) => (
-                                            <div className='my-2 text-lg text-neutral-400'>
+                                            <div
+                                                className={`my-2 text-lg ${fontClass}`}
+                                                style={{
+                                                    fontSize: `${fontSize}px`,
+                                                    color: pageColor.textColor,
+                                                }}
+                                            >
                                                 {children}
                                             </div>
                                         ),
@@ -300,7 +339,8 @@ function ReaderContent() {
 
 function Figure({ src, caption }: { src: string; caption?: string }) {
     const wrapperRef = useRef<HTMLSpanElement>(null);
-    const captionRef = useRef<HTMLSpanElement>(null);
+    const captionRef = useRef<HTMLDivElement>(null);
+    const { fontClass, pageColor } = useReaderSettings();
 
     useLayoutEffect(() => {
         if (!wrapperRef.current || !captionRef.current) return;
@@ -321,9 +361,27 @@ function Figure({ src, caption }: { src: string; caption?: string }) {
         <span ref={wrapperRef} className='relative inline-block max-w-full'>
             <img src={src} alt='' className='h-auto max-w-full' />
             {caption && (
-                <span ref={captionRef} className='absolute left-0 w-full text-sm'>
-                    {caption}
-                </span>
+                <div
+                    ref={captionRef}
+                    className='absolute left-0 min-w-64 text-sm'
+                    style={{
+                        color: pageColor.textColor,
+                    }}
+                >
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeRaw, rehypeKatex]}
+                        components={{
+                            p: ({ children }) => (
+                                <span className={`text-sm lg:text-base ${fontClass}`}>
+                                    {children}
+                                </span>
+                            ),
+                        }}
+                    >
+                        {caption}
+                    </ReactMarkdown>
+                </div>
             )}
         </span>
     );
@@ -333,17 +391,21 @@ export const dynamic = 'force-dynamic';
 
 export default function Page() {
     return (
-        <Suspense
-            fallback={
-                <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
-                    <Book className='mb-4 h-12 w-12 animate-pulse' />
-                    <span className='animate-pulse text-xl font-medium'>
-                        Loading your book. Just a moment...
-                    </span>
-                </div>
-            }
-        >
-            <ReaderContent />
-        </Suspense>
+        <ReaderSettingsProvider>
+            <QnAProvider>
+                <Suspense
+                    fallback={
+                        <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                            <Book className='mb-4 h-12 w-12 animate-pulse' />
+                            <span className='animate-pulse text-xl font-medium'>
+                                Loading your book. Just a moment...
+                            </span>
+                        </div>
+                    }
+                >
+                    <ReaderContent />
+                </Suspense>
+            </QnAProvider>
+        </ReaderSettingsProvider>
     );
 }
