@@ -9,8 +9,8 @@ import { getTitlesAll } from '@/services/api/library/getTitlesAll';
 import { deleteTitle } from '@/services/api/library/deleteTitle';
 import { getTitle } from '@/services/api/library/getTitle';
 
-import { LibraryCard } from '@/components/custom/library-card';
-import { UploadTitleDialog } from '@/components/custom/upload-title-dialog';
+import { LibraryCard } from '@/components/custom/library/library-card';
+import { UploadTitleDialog } from '@/components/custom/library/upload-title-dialog';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

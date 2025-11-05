@@ -2,19 +2,7 @@
 import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
-import {
-    EllipsisVertical,
-    Undo2,
-    Book,
-    Expand,
-    CaseSensitive,
-    Notebook,
-    Search,
-    TableOfContents,
-    Sidebar,
-    Plus,
-    Minus,
-} from 'lucide-react';
+import { EllipsisVertical, Undo2, Book, CaseSensitive, Notebook, Search } from 'lucide-react';
 import { useEffect, useRef, useState, useLayoutEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -32,23 +20,14 @@ import 'highlight.js/styles/github-dark.css';
 
 import { getTitle } from '@/services/api/library/getTitle';
 
-import { useMarkdown } from '@/hooks/ereader/useMarkdown';
+import { useMarkdown } from '@/hooks/reader/useMarkdown';
+import { useReaderSettings, ReaderSettingsProvider } from '@/hooks/reader/useReaderSettings';
+import { QnAProvider } from '@/hooks/reader/useQnA';
 
 import { Button } from '@/components/ui/button';
-
-import { Literata } from 'next/font/google';
-
-import { motion, AnimatePresence } from 'framer-motion';
-import { fontMap, pageColors } from '@/hooks/reader/useReaderSettings';
-import { useReaderSettings } from '@/hooks/reader/useReaderSettings';
-import { Separator } from '@/components/ui/separator';
-
-const literata = Literata({
-    subsets: ['latin'],
-    weight: ['300', '400', '500', '600', '700', '900'],
-    style: ['normal', 'italic'],
-    display: 'swap',
-});
+import { FontSettings } from '@/components/custom/reader/FontSettings';
+import { TextSelectionMenu } from '@/components/custom/reader/TextSelectionMenu';
+import { QnA } from '@/components/custom/reader/QnA';
 
 function ReaderContent() {
     const searchParams = useSearchParams();
@@ -73,15 +52,8 @@ function ReaderContent() {
     const [pageNumber, setPageNumber] = useState<number | null>(null);
 
     const [fontMenuOpen, setFontMenuOpen] = useState(false);
-    const {
-        setFontName,
-        fontClass,
-        increaseFont,
-        decreaseFont,
-        fontSize,
-        setPageColor,
-        pageColor,
-    } = useReaderSettings();
+
+    const { fontClass, fontSize, pageColor } = useReaderSettings();
 
     useEffect(() => {
         const container = parentRef.current;
@@ -181,10 +153,7 @@ function ReaderContent() {
 
                 <h1 className='uppercase'>{title.title}</h1>
 
-                <div>
-                    <Button variant='ghost' className='mx-2'>
-                        <TableOfContents />
-                    </Button>
+                <div className='hidden items-center gap-2 lg:flex'>
                     <Button variant='ghost' className='mx-2'>
                         <Search />
                     </Button>
@@ -198,76 +167,21 @@ function ReaderContent() {
                     <Button variant='ghost' className='mx-2'>
                         <Notebook />
                     </Button>
-                    <Button variant='ghost' className='mx-2'>
-                        <Expand />
-                    </Button>
-                    <Button variant='ghost' className='mx-2'>
-                        <EllipsisVertical />
-                    </Button>
                 </div>
+
+                <Button variant='ghost' className='mx-2 lg:hidden'>
+                    <EllipsisVertical />
+                </Button>
             </nav>
 
             <main className='relative flex min-h-0 w-full flex-1 justify-center overflow-hidden'>
-                <AnimatePresence>
-                    {fontMenuOpen && (
-                        <motion.aside
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                            className='fixed top-0 right-0 z-40 h-full w-100 bg-neutral-900 p-6 pt-20 text-white shadow-xl'
-                        >
-                            <h1>Font</h1>
-                            <div className='mt-5 flex items-center gap-6'>
-                                {Object.entries(fontMap).map(([name, nextFont]) => (
-                                    <Button
-                                        key={name}
-                                        variant={
-                                            fontClass == nextFont.className
-                                                ? 'outline'
-                                                : 'ghost'
-                                        }
-                                        className={`capitalize ${nextFont.className || ''}`}
-                                        onClick={() =>
-                                            setFontName(
-                                                name as Parameters<typeof setFontName>[0],
-                                            )
-                                        }
-                                    >
-                                        <span className={`${nextFont.className || ''} mr-2`}>
-                                            Aa
-                                        </span>
-                                        <span className='capitalize'>{name}</span>
-                                    </Button>
-                                ))}
-                            </div>
-                            <Separator className='my-5' />
-                            <h1>Font Size</h1>
-                            <div className='mt-5 flex items-center gap-6'>
-                                <Button variant='ghost' onClick={increaseFont}>
-                                    <Plus />
-                                </Button>
-                                <Button variant='ghost' onClick={decreaseFont}>
-                                    <Minus />
-                                </Button>
-                            </div>
-                            <Separator className='my-5' />
-                            <h1>Page Color</h1>
-                            <div className='mt-5 flex items-center gap-6'>
-                                {pageColors.map((color, index) => (
-                                    <Button
-                                        key={index}
-                                        className={`rounded-full bg-${color.bgColor} border border-neutral-500`}
-                                        onClick={() => setPageColor(color)}
-                                    />
-                                ))}
-                            </div>
-                        </motion.aside>
-                    )}
-                </AnimatePresence>
+                <FontSettings isOpen={fontMenuOpen} onClose={() => setFontMenuOpen(false)} />
+                <QnA />
+                <TextSelectionMenu />
+
                 <div
                     ref={parentRef}
-                    className={`h-full ${literata.className} scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
+                    className={`scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 h-full w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
                 >
                     <div
                         style={{
@@ -292,8 +206,8 @@ function ReaderContent() {
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm, remarkMath]}
                                     rehypePlugins={[
-                                        rehypeRaw,
                                         rehypeKatex,
+                                        rehypeRaw,
                                         rehypeSlug,
                                         rehypeAutolinkHeadings,
                                         [rehypeHighlight, { ignoreMissing: true }],
@@ -425,7 +339,8 @@ function ReaderContent() {
 
 function Figure({ src, caption }: { src: string; caption?: string }) {
     const wrapperRef = useRef<HTMLSpanElement>(null);
-    const captionRef = useRef<HTMLSpanElement>(null);
+    const captionRef = useRef<HTMLDivElement>(null);
+    const { fontClass, pageColor } = useReaderSettings();
 
     useLayoutEffect(() => {
         if (!wrapperRef.current || !captionRef.current) return;
@@ -446,9 +361,27 @@ function Figure({ src, caption }: { src: string; caption?: string }) {
         <span ref={wrapperRef} className='relative inline-block max-w-full'>
             <img src={src} alt='' className='h-auto max-w-full' />
             {caption && (
-                <span ref={captionRef} className='absolute left-0 w-full text-sm'>
-                    {caption}
-                </span>
+                <div
+                    ref={captionRef}
+                    className='absolute left-0 min-w-64 text-sm'
+                    style={{
+                        color: pageColor.textColor,
+                    }}
+                >
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeRaw, rehypeKatex]}
+                        components={{
+                            p: ({ children }) => (
+                                <span className={`text-sm lg:text-base ${fontClass}`}>
+                                    {children}
+                                </span>
+                            ),
+                        }}
+                    >
+                        {caption}
+                    </ReactMarkdown>
+                </div>
             )}
         </span>
     );
@@ -458,17 +391,21 @@ export const dynamic = 'force-dynamic';
 
 export default function Page() {
     return (
-        <Suspense
-            fallback={
-                <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
-                    <Book className='mb-4 h-12 w-12 animate-pulse' />
-                    <span className='animate-pulse text-xl font-medium'>
-                        Loading your book. Just a moment...
-                    </span>
-                </div>
-            }
-        >
-            <ReaderContent />
-        </Suspense>
+        <ReaderSettingsProvider>
+            <QnAProvider>
+                <Suspense
+                    fallback={
+                        <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                            <Book className='mb-4 h-12 w-12 animate-pulse' />
+                            <span className='animate-pulse text-xl font-medium'>
+                                Loading your book. Just a moment...
+                            </span>
+                        </div>
+                    }
+                >
+                    <ReaderContent />
+                </Suspense>
+            </QnAProvider>
+        </ReaderSettingsProvider>
     );
 }

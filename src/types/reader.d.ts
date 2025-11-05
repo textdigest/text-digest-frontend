@@ -14,3 +14,8 @@ export type Metadata =
     | { type: 'page_number'; text: string; bbox: BBox; page_idx: number }
     | { type: 'list'; sub_type: string; list_items: string[]; bbox: BBox; page_idx: number };
 export type Document = { markdown: string; assets: Asset[]; metadata: Metadata[] };
+
+export interface QnAMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
