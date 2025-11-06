@@ -6,6 +6,7 @@ type PostQnaMessageArgs = {
     highlighted_text: string;
     page_content: string;
     curr_conversation: QnAMessage[];
+    conversation_id: string;
 };
 
 export async function postQnaMessage({
@@ -13,6 +14,7 @@ export async function postQnaMessage({
     highlighted_text,
     page_content,
     curr_conversation,
+    conversation_id,
 }: PostQnaMessageArgs) {
     const token = await getIdToken();
 
@@ -22,7 +24,13 @@ export async function postQnaMessage({
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query, page_content, highlighted_text, curr_conversation }),
+        body: JSON.stringify({
+            query,
+            page_content,
+            highlighted_text,
+            curr_conversation,
+            conversation_id,
+        }),
     });
 
     if (!res.ok) {

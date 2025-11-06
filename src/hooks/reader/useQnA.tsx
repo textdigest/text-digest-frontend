@@ -22,6 +22,8 @@ interface QnAContextType {
     setSending: (sending: boolean) => void;
     //
     handleSend: (message: string) => void;
+    //
+    reset: () => void;
 }
 
 const QnAContext = createContext<QnAContextType | undefined>(undefined);
@@ -36,20 +38,32 @@ export function QnAProvider({ children }: QnAProviderProps) {
     const [message, setMessage] = useState<string>('');
     const [conversation, setConversation] = useState<QnAMessage[]>([]);
     const [isSending, setSending] = useState<boolean>(false);
+    const [conversationId, setConversationId] = useState<string | null>(null);
 
     const { reconnect, subscribe } = useWebsockets();
 
-    useEffect(() => {
-        if (!isOpen) {
-            setHighlightedText('');
-            setMessage('');
-            setConversation([]);
-            setSending(false);
-        }
-    }, [isOpen]);
+    function reset() {
+        setHighlightedText('');
+        setMessage('');
+        setConversation([]);
+        setSending(false);
+        setConversationId(null);
+    }
 
     useEffect(() => {
+        if (!isOpen) {
+            reset();
+        } else if (isOpen && !conversationId) {
+            setConversationId(crypto.randomUUID());
+        }
+    }, [isOpen, conversationId]);
+
+    useEffect(() => {
+        if (!conversationId) return;
+
         const unsubscribe = subscribe('reader-qna', (ws) => {
+            if (!ws.conversation_id || ws.conversation_id !== conversationId) return;
+
             if (ws.event === 'chunk') {
                 setConversation((prev) => {
                     if (prev.length === 0) {
@@ -64,18 +78,50 @@ export function QnAProvider({ children }: QnAProviderProps) {
 
             if (ws.event === 'turn-over') {
                 setSending(false);
+                setConversation((prev) => {
+                    const savedConversation = ws.body;
+                    if (Array.isArray(savedConversation) && savedConversation.length > 0) {
+                        return savedConversation.map((msg: any) => {
+                            let content = '';
+                            if (Array.isArray(msg.content)) {
+                                content = msg.content
+                                    .map((item: any) =>
+                                        typeof item === 'string'
+                                            ? item
+                                            : item?.text || item?.content || '',
+                                    )
+                                    .join('');
+                            } else if (typeof msg.content === 'string') {
+                                content = msg.content;
+                            }
+                            return {
+                                role:
+                                    msg.role === 'user' || msg.role === 'assistant'
+                                        ? msg.role
+                                        : 'assistant',
+                                content: content,
+                            };
+                        });
+                    }
+                    return prev;
+                });
+            }
+
+            if (ws.event === 'error') {
+                setSending(false);
             }
         });
 
         return unsubscribe;
-    }, [subscribe]);
+    }, [subscribe, conversationId]);
 
     async function handleSend(msg: string) {
-        if (!msg.trim() || isSending) return;
+        if (!msg.trim() || isSending || !conversationId) return;
 
         const userMessage: QnAMessage = { role: 'user', content: msg };
         const assistantMessage: QnAMessage = { role: 'assistant', content: '' };
         const updatedConversation = [...conversation, userMessage, assistantMessage];
+
         setConversation(updatedConversation);
         setMessage('');
         setSending(true);
@@ -87,6 +133,7 @@ export function QnAProvider({ children }: QnAProviderProps) {
                 highlighted_text: highlightedText,
                 page_content: '',
                 curr_conversation: [...conversation, userMessage],
+                conversation_id: conversationId,
             });
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -113,6 +160,8 @@ export function QnAProvider({ children }: QnAProviderProps) {
                 setSending,
 
                 handleSend,
+
+                reset,
             }}
         >
             {children}

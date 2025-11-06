@@ -1,6 +1,6 @@
 'use client';
 import type { ITitle } from '@/types/library';
-import { Library, Search, Upload } from 'lucide-react';
+import { Library, Search, FileText } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { SearchProvider, useSearch } from '@/components/providers/search-provider';
 import { useWebsockets } from '@/components/providers/websocket-provider';
@@ -112,14 +112,34 @@ function LibraryContent() {
                 </section>
 
                 <main className='grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-4'>
-                    {searchedTitles.map((title) => (
-                        <LibraryCard
-                            onDelete={handleDeleteClick}
-                            key={title.id}
-                            title={title}
-                        />
-                    ))}
+                    {isLoading
+                        ? Array.from({ length: 24 }).map((_, i) => <SkeletonCard key={i} />)
+                        : searchedTitles.map((title) => (
+                              <LibraryCard
+                                  onDelete={handleDeleteClick}
+                                  key={title.id}
+                                  title={title}
+                              />
+                          ))}
                 </main>
+            </div>
+        </div>
+    );
+}
+
+function SkeletonCard() {
+    return (
+        <div className='flex flex-1 animate-pulse flex-col justify-between bg-neutral-900 shadow-lg'>
+            <div className='flex h-44 w-full items-center justify-center rounded-t-md bg-neutral-800'>
+                <FileText className='h-32 w-32 text-neutral-600' />
+            </div>
+
+            <div className='flex h-24 flex-col gap-2 p-2'>
+                <div className='mb-1 h-5 w-3/4 rounded bg-neutral-700'></div>
+                <div className='mb-4 h-4 w-2/4 rounded bg-neutral-700'></div>
+                <div className='mt-auto flex items-center justify-end'>
+                    <div className='h-6 w-6 rounded-full bg-neutral-700' />
+                </div>
             </div>
         </div>
     );

@@ -14,7 +14,7 @@ export function TextSelectionMenu() {
     const [selectedText, setSelectedText] = useState<string>('');
     const menuRef = useRef<HTMLDivElement>(null);
 
-    const { setHighlightedText, setIsOpen } = useQnA();
+    const { setHighlightedText, setIsOpen, reset } = useQnA();
 
     useEffect(() => {
         const handleSelectionChange = () => {
@@ -70,7 +70,9 @@ export function TextSelectionMenu() {
         >
             <Button
                 variant='secondary'
+                className='px-2 py-1 text-lg'
                 onClick={() => {
+                    reset();
                     setHighlightedText(selectedText);
                     setIsOpen(true);
                 }}

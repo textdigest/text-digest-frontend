@@ -7,7 +7,6 @@ import {
     useRef,
     useCallback,
 } from 'react';
-import { fetchAuthSession } from '@aws-amplify/auth';
 import { getIdToken } from '@/services/amplify/getIdToken';
 
 interface IWebsocketMessage {
@@ -16,6 +15,7 @@ interface IWebsocketMessage {
     event: string;
     body: any;
     timestamp: string;
+    conversation_id?: string;
 }
 
 interface WebsocketContext {
