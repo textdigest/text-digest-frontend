@@ -65,32 +65,32 @@ export function QnA() {
                             components={{
                                 h1: ({ children }) => (
                                     <h1
-                                        className={`mb-2 break-inside-avoid text-xl font-semibold lg:text-xl ${fontClass}`}
+                                        className={`mb-2 break-inside-avoid text-lg font-semibold lg:text-xl ${fontClass}`}
                                     >
                                         {children}
                                     </h1>
                                 ),
                                 h2: ({ children }) => (
                                     <h2
-                                        className={`mb-2 break-inside-avoid text-lg font-semibold lg:text-lg ${fontClass}`}
+                                        className={`mb-2 break-inside-avoid text-base font-semibold lg:text-lg ${fontClass}`}
                                     >
                                         {children}
                                     </h2>
                                 ),
                                 h3: ({ children }) => (
                                     <h3
-                                        className={`mb-2 break-inside-avoid text-base font-semibold lg:text-base ${fontClass}`}
+                                        className={`mb-2 break-inside-avoid text-base font-semibold lg:text-lg ${fontClass}`}
                                     >
                                         {children}
                                     </h3>
                                 ),
                                 p: ({ children }) => (
-                                    <div className={`my-2 text-lg ${fontClass}`}>
+                                    <div className={`my-2 text-sm lg:text-base ${fontClass}`}>
                                         {children}
                                     </div>
                                 ),
                                 li: ({ children }) => (
-                                    <div className={`my-2 text-lg ${fontClass}`}>
+                                    <div className={`my-2 text-sm lg:text-base ${fontClass}`}>
                                         {children}
                                     </div>
                                 ),
@@ -185,10 +185,10 @@ export function QnA() {
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className='fixed top-0 right-0 z-40 h-full w-[400px] bg-neutral-900 p-6 pt-20 shadow-xl dark:bg-neutral-950'
+                    className='fixed top-0 right-0 z-40 h-full w-[32rem] border-l border-neutral-800 bg-neutral-900 p-6 pt-20 shadow-xl dark:bg-neutral-950'
                 >
                     <X
-                        className='absolute top-4 right-4 h-6 w-6 cursor-pointer text-neutral-400 hover:text-neutral-200'
+                        className='h-6 w-6 cursor-pointer text-neutral-400 hover:text-neutral-200'
                         onClick={() => setIsOpen(false)}
                     />
                     {content}
