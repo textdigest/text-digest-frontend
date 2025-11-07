@@ -93,6 +93,7 @@ function ReaderContent() {
 
     useEffect(() => {
         const container = parentRef.current;
+        console.log(container)
         if (!container) return;
 
         function updatePageNumber() {
@@ -151,16 +152,7 @@ function ReaderContent() {
             setTitle(title);
             setAssets(doc.assets || []);
             setMetadata(doc.metadata);
-
-            // Fetch notes for this book
-            try {
-                const notesData = await getNotes({ bookTitle: title.title });
-                setNotes(notesData.notes || []);
-            } catch (error) {
-                console.error('Failed to fetch notes:', error);
-                // If notes don't exist yet, that's okay - just set empty array
-                setNotes([]);
-            }
+            setNotes([]);
         }
         init().then(() => setIsLoading(false));
     }, [searchParams]);
@@ -248,6 +240,12 @@ function ReaderContent() {
 
         return highlightedContent;
     }
+
+    useEffect(() => {
+        if (!title) return;
+
+        refreshNotes();
+    }, [title, refreshNotes]);
 
     if (isLoading)
         return (
