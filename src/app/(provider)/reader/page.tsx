@@ -3,7 +3,7 @@ import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
 import { EllipsisVertical, Undo2, Book, CaseSensitive, Notebook, Search } from 'lucide-react';
-import { useEffect, useRef, useState, useLayoutEffect, Suspense } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
@@ -19,15 +19,18 @@ import 'katex/dist/katex.min.css';
 import 'highlight.js/styles/github-dark.css';
 
 import { getTitle } from '@/services/api/library/getTitle';
+import { getNotes } from '@/services/api/library/getNotes';
 
 import { useMarkdown } from '@/hooks/reader/useMarkdown';
 import { useReaderSettings, ReaderSettingsProvider } from '@/hooks/reader/useReaderSettings';
 import { QnAProvider } from '@/hooks/reader/useQnA';
+import { AnnotateProvider, useAnnotate } from '@/hooks/reader/useAnnotate';
 
 import { Button } from '@/components/ui/button';
 import { FontSettings } from '@/components/custom/reader/FontSettings';
 import { TextSelectionMenu } from '@/components/custom/reader/TextSelectionMenu';
 import { QnA } from '@/components/custom/reader/QnA';
+import { Annotate } from '@/components/custom/reader/Annotate';
 
 function ReaderContent() {
     const searchParams = useSearchParams();
@@ -38,6 +41,15 @@ function ReaderContent() {
 
     const [assets, setAssets] = useState<Asset[]>([]);
     const [metadata, setMetadata] = useState<Metadata[]>([]);
+    const [notes, setNotes] = useState<
+        Array<{
+            text?: string; // New format: highlighted text
+            annotation?: string; // New format: annotation comment
+            comment?: string; // Old format: backward compatibility
+            page_num: number;
+            book_title: string;
+        }>
+    >([]);
 
     const { pages } = useMarkdown(metadata);
     const parentRef = useRef<HTMLDivElement>(null);
@@ -54,6 +66,30 @@ function ReaderContent() {
     const [fontMenuOpen, setFontMenuOpen] = useState(false);
 
     const { fontClass, fontSize, pageColor } = useReaderSettings();
+    const { setBookContext, setRefreshNotes } = useAnnotate();
+
+    // Function to refresh notes from the API
+    const refreshNotes = useCallback(async () => {
+        if (!title) return;
+        try {
+            const notesData = await getNotes({ bookTitle: title.title });
+            setNotes(notesData.notes || []);
+        } catch (error) {
+            console.error('Failed to refresh notes:', error);
+        }
+    }, [title]);
+
+    // Set the refresh function in the annotate context
+    useEffect(() => {
+        setRefreshNotes(refreshNotes);
+    }, [refreshNotes, setRefreshNotes]);
+
+    // Set book context when title is available (use pageNumber 0 as default if not calculated yet)
+    useEffect(() => {
+        if (title) {
+            setBookContext(title.title, pageNumber !== null ? pageNumber : 0);
+        }
+    }, [title, pageNumber, setBookContext]);
 
     useEffect(() => {
         const container = parentRef.current;
@@ -115,6 +151,16 @@ function ReaderContent() {
             setTitle(title);
             setAssets(doc.assets || []);
             setMetadata(doc.metadata);
+
+            // Fetch notes for this book
+            try {
+                const notesData = await getNotes({ bookTitle: title.title });
+                setNotes(notesData.notes || []);
+            } catch (error) {
+                console.error('Failed to fetch notes:', error);
+                // If notes don't exist yet, that's okay - just set empty array
+                setNotes([]);
+            }
         }
         init().then(() => setIsLoading(false));
     }, [searchParams]);
@@ -127,6 +173,80 @@ function ReaderContent() {
         const base = src.split('/').pop() || src;
         if (m.has(base)) return m.get(base)!;
         return src;
+    }
+
+    // Get notes for a specific page (pageNumber is 0-indexed, notes.page_num is 1-indexed)
+    function getNotesForPage(pageIndex: number) {
+        return notes.filter((note) => note.page_num === pageIndex + 1);
+    }
+
+    // Highlight text in markdown content
+    function highlightAnnotatedText(content: string, pageIndex: number) {
+        const pageNotes = getNotesForPage(pageIndex);
+        if (pageNotes.length === 0) return content;
+
+        let highlightedContent = content;
+        const processedRanges: Array<{ start: number; end: number }> = [];
+
+        // Sort notes by text length (longer first) to avoid partial matches
+        const sortedNotes = [...pageNotes].sort((a, b) => {
+            const textA = (a.text || a.comment || '').length;
+            const textB = (b.text || b.comment || '').length;
+            return textB - textA;
+        });
+
+        // For each note, highlight the original selected text
+        sortedNotes.forEach((note) => {
+            // Use new format (text) or fall back to old format (comment) for backward compatibility
+            const textToHighlight = note.text || note.comment;
+            if (!textToHighlight || textToHighlight.trim().length === 0) return;
+
+            // Trim and escape special regex characters
+            const trimmedText = textToHighlight.trim();
+            const escapedText = trimmedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            // Create a regex to find the text (case-insensitive)
+            // Use word boundaries to avoid partial matches, but make them optional
+            const regex = new RegExp(`(${escapedText})`, 'gi');
+            const matches = Array.from(highlightedContent.matchAll(regex));
+
+            // Process matches in reverse order to maintain correct indices
+            for (let i = matches.length - 1; i >= 0; i--) {
+                const match = matches[i];
+                if (match.index === undefined) continue;
+
+                const start = match.index;
+                const end = start + match[0].length;
+
+                // Check if this range overlaps with already processed ranges
+                const overlaps = processedRanges.some(
+                    (range) => !(end <= range.start || start >= range.end),
+                );
+
+                if (!overlaps) {
+                    // Check if we're already inside a mark tag by looking at surrounding context
+                    const before = highlightedContent.substring(Math.max(0, start - 10), start);
+                    const after = highlightedContent.substring(end, Math.min(highlightedContent.length, end + 10));
+                    
+                    // Only highlight if not already inside a mark tag
+                    if (!before.includes('<mark') && !after.includes('</mark>')) {
+                        // Insert highlight markup
+                        const beforeText = highlightedContent.substring(0, start);
+                        const matchText = highlightedContent.substring(start, end);
+                        const afterText = highlightedContent.substring(end);
+
+                        highlightedContent =
+                            beforeText +
+                            `<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">${matchText}</mark>` +
+                            afterText;
+
+                        processedRanges.push({ start, end });
+                    }
+                }
+            }
+        });
+
+        return highlightedContent;
     }
 
     if (isLoading)
@@ -143,7 +263,8 @@ function ReaderContent() {
 
     return (
         <div
-            className={`relative flex h-[100svh] w-[100svw] flex-col overflow-hidden bg-${pageColor.bgColor}`}
+            className='relative flex h-[100svh] w-[100svw] flex-col overflow-hidden'
+            style={{ backgroundColor: pageColor.bgColor }}
         >
             <nav className='z-50 flex h-16 w-full items-center justify-between border-b border-neutral-500 bg-neutral-950 px-4'>
                 <Button onClick={() => router.push('/library')} variant='ghost'>
@@ -177,6 +298,7 @@ function ReaderContent() {
             <main className='relative flex min-h-0 w-full flex-1 justify-center overflow-hidden'>
                 <FontSettings isOpen={fontMenuOpen} onClose={() => setFontMenuOpen(false)} />
                 <QnA />
+                <Annotate />
                 <TextSelectionMenu />
 
                 <div
@@ -213,6 +335,11 @@ function ReaderContent() {
                                         [rehypeHighlight, { ignoreMissing: true }],
                                     ]}
                                     components={{
+                                        mark: ({ children }) => (
+                                            <mark className='bg-yellow-200 dark:bg-yellow-800 rounded px-0.5'>
+                                                {children}
+                                            </mark>
+                                        ),
                                         h1: ({ children }) => (
                                             <h1
                                                 className={`mb-2 break-inside-avoid text-2xl font-semibold ${fontClass}`}
@@ -317,7 +444,7 @@ function ReaderContent() {
                                         },
                                     }}
                                 >
-                                    {pages[virtualItem.index]}
+                                    {highlightAnnotatedText(pages[virtualItem.index], virtualItem.index)}
                                 </ReactMarkdown>
                             </div>
                         ))}
@@ -393,18 +520,20 @@ export default function Page() {
     return (
         <ReaderSettingsProvider>
             <QnAProvider>
-                <Suspense
-                    fallback={
-                        <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
-                            <Book className='mb-4 h-12 w-12 animate-pulse' />
-                            <span className='animate-pulse text-xl font-medium'>
-                                Loading your book. Just a moment...
-                            </span>
-                        </div>
-                    }
-                >
-                    <ReaderContent />
-                </Suspense>
+                <AnnotateProvider>
+                    <Suspense
+                        fallback={
+                            <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                                <Book className='mb-4 h-12 w-12 animate-pulse' />
+                                <span className='animate-pulse text-xl font-medium'>
+                                    Loading your book. Just a moment...
+                                </span>
+                            </div>
+                        }
+                    >
+                        <ReaderContent />
+                    </Suspense>
+                </AnnotateProvider>
             </QnAProvider>
         </ReaderSettingsProvider>
     );
