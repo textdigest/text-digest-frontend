@@ -3,7 +3,17 @@ import type { BBox, Document, Asset, Metadata } from '@/types/reader';
 import type { ITitle } from '@/types/library';
 
 import { EllipsisVertical, Undo2, Book, CaseSensitive, Notebook, Search } from 'lucide-react';
-import { useEffect, useRef, useState, useLayoutEffect, Suspense, useCallback } from 'react';
+import {
+    Children,
+    HTMLAttributes,
+    ReactNode,
+    Suspense,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
@@ -25,12 +35,24 @@ import { useMarkdown } from '@/hooks/reader/useMarkdown';
 import { useReaderSettings, ReaderSettingsProvider } from '@/hooks/reader/useReaderSettings';
 import { QnAProvider } from '@/hooks/reader/useQnA';
 import { AnnotateProvider, useAnnotate } from '@/hooks/reader/useAnnotate';
+import type { AnnotationEntry } from '@/hooks/reader/useAnnotate';
 
 import { Button } from '@/components/ui/button';
 import { FontSettings } from '@/components/custom/reader/FontSettings';
 import { TextSelectionMenu } from '@/components/custom/reader/TextSelectionMenu';
 import { QnA } from '@/components/custom/reader/QnA';
 import { Annotate } from '@/components/custom/reader/Annotate';
+
+function extractTextFromChildren(children: ReactNode): string {
+    return Children.toArray(children)
+        .map((child) => {
+            if (typeof child === 'string' || typeof child === 'number') {
+                return String(child);
+            }
+            return '';
+        })
+        .join('');
+}
 
 function ReaderContent() {
     const searchParams = useSearchParams();
@@ -41,15 +63,7 @@ function ReaderContent() {
 
     const [assets, setAssets] = useState<Asset[]>([]);
     const [metadata, setMetadata] = useState<Metadata[]>([]);
-    const [notes, setNotes] = useState<
-        Array<{
-            text?: string; // New format: highlighted text
-            annotation?: string; // New format: annotation comment
-            comment?: string; // Old format: backward compatibility
-            page_num: number;
-            book_title: string;
-        }>
-    >([]);
+    const [notes, setNotes] = useState<AnnotationEntry[]>([]);
 
     const { pages } = useMarkdown(metadata);
     const parentRef = useRef<HTMLDivElement>(null);
@@ -66,7 +80,15 @@ function ReaderContent() {
     const [fontMenuOpen, setFontMenuOpen] = useState(false);
 
     const { fontClass, fontSize, pageColor } = useReaderSettings();
-    const { setBookContext, setRefreshNotes } = useAnnotate();
+    const {
+        highlightedText: activeHighlightedText,
+        setBookContext,
+        setRefreshNotes,
+        setHighlightedText,
+        setText,
+        setIsOpen: setAnnotateOpen,
+        setExistingAnnotations,
+    } = useAnnotate();
 
     // Function to refresh notes from the API
     const refreshNotes = useCallback(async () => {
@@ -78,6 +100,54 @@ function ReaderContent() {
             console.error('Failed to refresh notes:', error);
         }
     }, [title]);
+
+    const sanitizeForMatching = useCallback((value: string) => {
+        return value.replace(/\u00a0/g, ' ').trim();
+    }, []);
+
+    const normalizeAnnotationText = useCallback(
+        (value?: string | null) => {
+            if (!value) return '';
+            const sanitized = sanitizeForMatching(value);
+            if (!sanitized) return '';
+            return sanitized.replace(/\s+/g, ' ').toLowerCase();
+        },
+        [sanitizeForMatching],
+    );
+
+    const buildFlexibleRegex = useCallback(
+        (rawText: string) => {
+            const sanitized = sanitizeForMatching(rawText);
+            if (!sanitized) return null;
+
+            const segments = sanitized
+                .split(/\s+/)
+                .map((segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                .filter(Boolean);
+
+            if (segments.length === 0) return null;
+
+            const pattern = segments.join('\\s+');
+            if (!pattern) return null;
+
+            return new RegExp(`(${pattern})`, 'gi');
+        },
+        [sanitizeForMatching],
+    );
+
+    const findAnnotationsForText = useCallback(
+        (target: string) => {
+            const normalizedTarget = normalizeAnnotationText(target);
+            if (!normalizedTarget) return [];
+
+            return notes.filter((note) => {
+                const highlightSource = note.text || note.comment;
+                const noteHighlight = normalizeAnnotationText(highlightSource);
+                return noteHighlight === normalizedTarget;
+            });
+        },
+        [normalizeAnnotationText, notes],
+    );
 
     // Set the refresh function in the annotate context
     useEffect(() => {
@@ -169,7 +239,73 @@ function ReaderContent() {
 
     // Get notes for a specific page (pageNumber is 0-indexed, notes.page_num is 1-indexed)
     function getNotesForPage(pageIndex: number) {
-        return notes.filter((note) => note.page_num === pageIndex + 1);
+        const targetPage = pageIndex + 1;
+        return notes.filter((note) => Math.abs(note.page_num - targetPage) <= 1);
+    }
+
+    const handleHighlightClick = useCallback(
+        (highlight: string, annotation: string) => {
+            setHighlightedText(highlight);
+            setText(annotation);
+            setExistingAnnotations(findAnnotationsForText(highlight));
+            setAnnotateOpen(true);
+        },
+        [findAnnotationsForText, setAnnotateOpen, setExistingAnnotations, setHighlightedText, setText],
+    );
+
+    useEffect(() => {
+        if (!activeHighlightedText) {
+            setExistingAnnotations([]);
+            return;
+        }
+
+        setExistingAnnotations(findAnnotationsForText(activeHighlightedText));
+    }, [activeHighlightedText, findAnnotationsForText, setExistingAnnotations]);
+
+    function safeEncode(value: string) {
+        try {
+            return encodeURIComponent(value);
+        } catch {
+            return '';
+        }
+    }
+
+    function safeDecode(value?: string | number) {
+        if (value === undefined || value === null) return '';
+        const stringValue = typeof value === 'number' ? String(value) : value;
+        try {
+            return decodeURIComponent(stringValue);
+        } catch {
+            return '';
+        }
+    }
+
+    function findDirectMatches(content: string, target: string) {
+        if (!target) return [];
+
+        const normalizedTarget = target.replace(/\u00a0/g, ' ');
+        const normalizedContent = content.replace(/\u00a0/g, ' ');
+        if (!sanitizeForMatching(normalizedTarget)) return [];
+
+        const contentLower = normalizedContent.toLowerCase();
+        const targetLower = normalizedTarget.toLowerCase();
+
+        const matches: Array<{ start: number; end: number }> = [];
+
+        let searchIndex = 0;
+        while (searchIndex < contentLower.length) {
+            const foundIndex = contentLower.indexOf(targetLower, searchIndex);
+            if (foundIndex === -1) break;
+
+            matches.push({
+                start: foundIndex,
+                end: foundIndex + normalizedTarget.length,
+            });
+
+            searchIndex = foundIndex + normalizedTarget.length;
+        }
+
+        return matches;
     }
 
     // Highlight text in markdown content
@@ -193,22 +329,30 @@ function ReaderContent() {
             const textToHighlight = note.text || note.comment;
             if (!textToHighlight || textToHighlight.trim().length === 0) return;
 
-            // Trim and escape special regex characters
-            const trimmedText = textToHighlight.trim();
-            const escapedText = trimmedText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            
-            // Create a regex to find the text (case-insensitive)
-            // Use word boundaries to avoid partial matches, but make them optional
-            const regex = new RegExp(`(${escapedText})`, 'gi');
-            const matches = Array.from(highlightedContent.matchAll(regex));
+            const directMatches = findDirectMatches(highlightedContent, textToHighlight);
+            const regexMatches = (() => {
+                const regex = buildFlexibleRegex(textToHighlight);
+                if (!regex) return [];
+                return Array.from(highlightedContent.matchAll(regex)).map((match) => {
+                    if (match.index === undefined) {
+                        return null;
+                    }
+                    return { start: match.index, end: match.index + match[0].length };
+                });
+            })().filter((match): match is { start: number; end: number } => match !== null);
+
+            const matches =
+                directMatches.length > 0
+                    ? directMatches
+                    : regexMatches.length > 0
+                    ? regexMatches
+                    : [];
 
             // Process matches in reverse order to maintain correct indices
             for (let i = matches.length - 1; i >= 0; i--) {
                 const match = matches[i];
-                if (match.index === undefined) continue;
-
-                const start = match.index;
-                const end = start + match[0].length;
+                const start = match.start;
+                const end = match.end;
 
                 // Check if this range overlaps with already processed ranges
                 const overlaps = processedRanges.some(
@@ -227,9 +371,19 @@ function ReaderContent() {
                         const matchText = highlightedContent.substring(start, end);
                         const afterText = highlightedContent.substring(end);
 
+                        const rawAnnotation = (note.annotation ?? note.comment ?? '').trim();
+                        const annotationValue = rawAnnotation;
+                        const encodedAnnotation =
+                            annotationValue.length > 0 ? safeEncode(annotationValue) : '';
+                        const encodedHighlight = safeEncode(matchText);
+
                         highlightedContent =
                             beforeText +
-                            `<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">${matchText}</mark>` +
+                            `<mark class="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5 annotated-highlight" data-highlight="${encodedHighlight}"${
+                                encodedAnnotation.length > 0
+                                    ? ` data-annotation="${encodedAnnotation}"`
+                                    : ''
+                            }>${matchText}</mark>` +
                             afterText;
 
                         processedRanges.push({ start, end });
@@ -333,11 +487,65 @@ function ReaderContent() {
                                         [rehypeHighlight, { ignoreMissing: true }],
                                     ]}
                                     components={{
-                                        mark: ({ children }) => (
-                                            <mark className='bg-yellow-200 dark:bg-yellow-800 rounded px-0.5'>
-                                                {children}
-                                            </mark>
-                                        ),
+                                        mark: ({ node, children, ...props }) => {
+                                            const annotationAttr =
+                                                node?.properties?.['data-annotation'];
+                                            const highlightAttr =
+                                                node?.properties?.['data-highlight'];
+
+                                            const annotation = safeDecode(
+                                                Array.isArray(annotationAttr)
+                                                    ? annotationAttr[0]
+                                                    : (annotationAttr as string | undefined),
+                                            );
+                                            const highlight = safeDecode(
+                                                Array.isArray(highlightAttr)
+                                                    ? highlightAttr[0]
+                                                    : (highlightAttr as string | undefined),
+                                            );
+
+                                            const componentProps = props as HTMLAttributes<HTMLElement>;
+                                            const inheritedClass = componentProps.className ?? '';
+
+                                            const fallbackHighlightRaw = highlight.trim().length
+                                                ? highlight
+                                                : extractTextFromChildren(children);
+                                            const hasAnnotation =
+                                                annotation.trim().length > 0 ||
+                                                fallbackHighlightRaw.trim().length > 0;
+                                            const className = [
+                                                'bg-yellow-200',
+                                                'dark:bg-yellow-800',
+                                                'rounded',
+                                                'px-0.5',
+                                                hasAnnotation ? 'cursor-pointer underline-offset-4' : '',
+                                                inheritedClass,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' ');
+
+                                            const { onClick: inheritedOnClick, className: _ignored, ...rest } =
+                                                componentProps;
+
+                                            return (
+                                                <mark
+                                                    {...rest}
+                                                    className={className}
+                                                    onClick={(event) => {
+                                                        inheritedOnClick?.(event);
+
+                                                        if (!hasAnnotation) return;
+
+                                                        handleHighlightClick(
+                                                            fallbackHighlightRaw,
+                                                            annotation,
+                                                        );
+                                                    }}
+                                                >
+                                                    {children}
+                                                </mark>
+                                            );
+                                        },
                                         h1: ({ children }) => (
                                             <h1
                                                 className={`mb-2 break-inside-avoid text-2xl font-semibold ${fontClass}`}

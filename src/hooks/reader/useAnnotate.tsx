@@ -3,6 +3,14 @@ import { createContext, useContext, useState, ReactNode, useEffect, useRef } fro
 import { postNote } from '@/services/api/library/postNotes';
 import { toast } from 'sonner';
 
+export type AnnotationEntry = {
+    text?: string;
+    annotation?: string;
+    comment?: string;
+    page_num: number;
+    book_title: string;
+};
+
 interface AnnotateContextType {
     highlightedText: string;
     setHighlightedText: (text: string) => void;
@@ -15,12 +23,15 @@ interface AnnotateContextType {
     //
     isSaving: boolean;
     //
-    handleSave: () => void | Promise<void>;
+    handleSave: (overrideText?: string, options?: { keepFields?: boolean }) => void | Promise<void>;
     setBookContext: (bookTitle: string, pageNumber: number) => void;
     //
     reset: () => void;
     //
     setRefreshNotes: (refreshFn: () => Promise<void>) => void;
+    //
+    existingAnnotations: AnnotationEntry[];
+    setExistingAnnotations: (annotations: AnnotationEntry[]) => void;
 }
 
 const AnnotateContext = createContext<AnnotateContextType | undefined>(undefined);
@@ -34,6 +45,7 @@ export function AnnotateProvider({ children }: AnnotateProviderProps) {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [text, setText] = useState<string>('');
     const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [existingAnnotations, setExistingAnnotations] = useState<AnnotationEntry[]>([]);
     
     // Book context for saving notes
     const bookTitleRef = useRef<string>('');
@@ -58,6 +70,7 @@ export function AnnotateProvider({ children }: AnnotateProviderProps) {
     function reset() {
         setHighlightedText('');
         setText('');
+        setExistingAnnotations([]);
     }
 
     useEffect(() => {
@@ -75,9 +88,9 @@ export function AnnotateProvider({ children }: AnnotateProviderProps) {
         refreshNotesRef.current = refreshFn;
     }
 
-    async function handleSave() {
-        // Use refs to get the latest values (avoids closure issues)
-        const currentText = textRef.current;
+    async function handleSave(overrideText?: string, options?: { keepFields?: boolean }) {
+        // Use override text when provided, otherwise fall back to the latest state (via refs)
+        const currentText = overrideText ?? textRef.current;
         const currentHighlightedText = highlightedTextRef.current;
         const currentBookTitle = bookTitleRef.current;
         const currentPageNumber = pageNumberRef.current;
@@ -110,7 +123,11 @@ export function AnnotateProvider({ children }: AnnotateProviderProps) {
                 bookTitle: currentBookTitle,
             });
             toast.success('Annotation saved successfully');
-            reset();
+            if (options?.keepFields) {
+                setText('');
+            } else {
+                reset();
+            }
             
             // Refresh notes to show the new highlight
             if (refreshNotesRef.current) {
@@ -151,6 +168,8 @@ export function AnnotateProvider({ children }: AnnotateProviderProps) {
                 reset,
 
                 setRefreshNotes,
+                existingAnnotations,
+                setExistingAnnotations,
             }}
         >
             {children}
