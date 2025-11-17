@@ -86,6 +86,8 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
             } = pendingAudioRef.current;
             const currentConversationId = conversationId || pendingId;
 
+            setSending(true);
+
             (async () => {
                 try {
                     await reconnect();
@@ -105,7 +107,8 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                         const userMessage = { role: 'user' as const, content: transcribedText };
                         const assistantMessage = { role: 'assistant' as const, content: '' };
                         setConversation([userMessage, assistantMessage]);
-                        setSending(true);
+                    } else {
+                        setSending(false);
                     }
 
                     pendingAudioRef.current = null;
@@ -140,6 +143,7 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                 try {
                     setHighlightedText(viewportContentRef.current);
                     setIsOpen(true);
+                    setSending(true);
 
                     const generatedId = crypto.randomUUID();
                     pendingAudioRef.current = {
@@ -172,10 +176,13 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                                 content: '',
                             };
                             setConversation([userMessage, assistantMessage]);
-                            setSending(true);
+                        } else {
+                            setSending(false);
                         }
 
                         pendingAudioRef.current = null;
+                    } else {
+                        console.log('No conversationId, storing in pendingAudioRef');
                     }
                 } catch (error) {
                     console.error('Failed to send audio:', error);
