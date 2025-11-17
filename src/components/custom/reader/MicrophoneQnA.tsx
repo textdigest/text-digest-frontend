@@ -43,6 +43,36 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
         };
     }, []);
 
+    const stopRecording = useCallback(() => {
+        if (!mediaRecorderRef.current || !recording) return;
+        mediaRecorderRef.current.stop();
+        setRecording(false);
+    }, [recording]);
+
+    useEffect(() => {
+        if (!recording) return;
+
+        const handleGlobalTouch = (e: TouchEvent) => {
+            if (buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+                stopRecording();
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopRecording();
+            }
+        };
+
+        document.addEventListener('touchstart', handleGlobalTouch);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('touchstart', handleGlobalTouch);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [recording, stopRecording]);
+
     useEffect(() => {
         if (pendingAudioRef.current && conversationId) {
             const { base64Data, conversationId: pendingId } = pendingAudioRef.current;
@@ -135,46 +165,51 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
         [setHighlightedText, setIsOpen, setConversation, setSending, reconnect, conversationId],
     );
 
-    const startRecording = useCallback(async () => {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-        if (recording) return;
+    const startRecording = useCallback(
+        async (e: React.MouseEvent | React.TouchEvent) => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+            if (recording) return;
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            chunksRef.current = [];
+            e.preventDefault();
 
-            console.log('viewport content: ', viewportContentRef.current);
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) chunksRef.current.push(event.data);
-            };
+                if (!buttonRef.current?.matches(':active')) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    return;
+                }
 
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-                stream.getTracks().forEach((track) => track.stop());
-                mediaRecorderRef.current = null;
-                handleRecordingComplete(blob);
-            };
+                const mediaRecorder = new MediaRecorder(stream);
+                chunksRef.current = [];
 
-            mediaRecorderRef.current = mediaRecorder;
-            mediaRecorder.start();
-            setRecording(true);
-        } catch (error) {
-            const e = error as any;
-            if (e && e.name === 'NotFoundError') {
-                // TODO: Add a toast for microphone
-            } else {
-                console.error(error);
+                console.log('viewport content: ', viewportContentRef.current);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) chunksRef.current.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                    stream.getTracks().forEach((track) => track.stop());
+                    mediaRecorderRef.current = null;
+                    handleRecordingComplete(blob);
+                };
+
+                mediaRecorderRef.current = mediaRecorder;
+                mediaRecorder.start();
+                setRecording(true);
+            } catch (error) {
+                const e = error as any;
+                if (e && e.name === 'NotFoundError') {
+                    console.error('Microphone not found');
+                } else {
+                    console.error(error);
+                }
             }
-        }
-    }, [recording, handleRecordingComplete]);
-
-    const stopRecording = useCallback(() => {
-        if (!mediaRecorderRef.current || !recording) return;
-        mediaRecorderRef.current.stop();
-        setRecording(false);
-    }, [recording]);
+        },
+        [recording, handleRecordingComplete],
+    );
 
     return (
         <Button
