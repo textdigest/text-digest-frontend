@@ -181,9 +181,10 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
             ref={buttonRef}
             className='fixed right-2 bottom-2 z-10 select-none md:right-32 lg:right-48 xl:right-96 2xl:right-[33svw]'
             variant='secondary'
-            onPointerDown={startRecording}
-            onPointerUp={stopRecording}
-            onPointerLeave={stopRecording}
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
         >
             <AudioLines size={32} />
             {recording ? 'Listening...' : 'Ask AI'}
