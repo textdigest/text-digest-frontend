@@ -185,6 +185,7 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
             onMouseUp={stopRecording}
             onTouchStart={startRecording}
             onTouchEnd={stopRecording}
+            onTouchCancel={stopRecording}
         >
             <AudioLines size={32} />
             {recording ? 'Listening...' : 'Ask AI'}
