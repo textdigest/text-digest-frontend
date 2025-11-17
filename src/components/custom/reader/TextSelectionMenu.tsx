@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Highlighter, Sparkle, WandSparkles } from 'lucide-react';
+import { Highlighter, NotebookPen, Sparkle, WandSparkles } from 'lucide-react';
 import { useQnA } from '@/hooks/reader/useQnA';
+import { useAnnotate } from '@/hooks/reader/useAnnotate';
 
 type SelectionPosition = {
     top: number;
@@ -14,7 +15,16 @@ export function TextSelectionMenu() {
     const [selectedText, setSelectedText] = useState<string>('');
     const menuRef = useRef<HTMLDivElement>(null);
 
-    const { setHighlightedText, setIsOpen, reset } = useQnA();
+    const {
+        setHighlightedText: setQnAHighlightedText,
+        setIsOpen: setQnAOpen,
+        reset: resetQnA,
+    } = useQnA();
+    const {
+        setHighlightedText: setAnnotateHighlightedText,
+        setIsOpen: setAnnotateOpen,
+        reset: resetAnnotate,
+    } = useAnnotate();
 
     useEffect(() => {
         const handleSelectionChange = () => {
@@ -61,7 +71,7 @@ export function TextSelectionMenu() {
     return (
         <div
             ref={menuRef}
-            className='fixed z-50'
+            className='fixed z-50 flex gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-2 py-2'
             style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,
@@ -72,13 +82,25 @@ export function TextSelectionMenu() {
                 variant='secondary'
                 className='px-2 py-1 text-lg'
                 onClick={() => {
-                    reset();
-                    setHighlightedText(selectedText);
-                    setIsOpen(true);
+                    resetQnA();
+                    setQnAHighlightedText(selectedText);
+                    setQnAOpen(true);
                 }}
             >
                 <WandSparkles />
                 Elaborate
+            </Button>
+            <Button
+                variant='secondary'
+                className='px-2 py-1 text-lg'
+                onClick={() => {
+                    resetAnnotate();
+                    setAnnotateHighlightedText(selectedText);
+                    setAnnotateOpen(true);
+                }}
+            >
+                <NotebookPen />
+                Annotate
             </Button>
         </div>
     );
