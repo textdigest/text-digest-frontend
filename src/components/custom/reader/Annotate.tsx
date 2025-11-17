@@ -47,10 +47,12 @@ export function Annotate() {
 
     const memoizedAnnotations = useMemo(() => {
         return existingAnnotations.map((entry, index) => {
-            const highlightText =
-                entry.text?.trim().length ? entry.text.trim() : entry.comment?.trim() ?? '';
-            const annotationValue =
-                entry.annotation?.trim().length ? entry.annotation.trim() : entry.comment?.trim() ?? '';
+            const highlightText = entry.text?.trim().length
+                ? entry.text.trim()
+                : (entry.comment?.trim() ?? '');
+            const annotationValue = entry.annotation?.trim().length
+                ? entry.annotation.trim()
+                : (entry.comment?.trim() ?? '');
 
             return {
                 key: `${entry.book_title}-${entry.page_num}-${index}-${highlightText.slice(0, 12)}`,
@@ -79,7 +81,9 @@ export function Annotate() {
                     <p className='text-xs font-medium text-neutral-500 dark:text-neutral-400'>
                         Selected text:
                     </p>
-                    <p className={`mt-1 text-sm text-neutral-700 dark:text-neutral-300 ${fontClass}`}>
+                    <p
+                        className={`mt-1 text-sm text-neutral-700 dark:text-neutral-300 ${fontClass}`}
+                    >
                         "{highlightedText}"
                     </p>
                 </div>
@@ -87,7 +91,7 @@ export function Annotate() {
 
             {memoizedAnnotations.length > 0 && (
                 <div className='mb-4 rounded-md border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900'>
-                    <p className='text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400'>
+                    <p className='text-xs font-medium tracking-wide text-neutral-500 uppercase dark:text-neutral-400'>
                         Previous annotations
                     </p>
                     <ul className='mt-2 flex flex-col gap-3'>
@@ -98,7 +102,7 @@ export function Annotate() {
                                     className='rounded-md border border-neutral-200 bg-neutral-100 p-3 text-sm text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-200'
                                 >
                                     <div>
-                                        <p className='text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400'>
+                                        <p className='text-[11px] font-semibold tracking-wide text-neutral-500 uppercase dark:text-neutral-400'>
                                             Highlight
                                         </p>
                                         <p className='mt-1 text-sm text-neutral-700 dark:text-neutral-200'>
@@ -106,11 +110,12 @@ export function Annotate() {
                                         </p>
                                     </div>
                                     <div className='mt-3'>
-                                        <p className='text-[11px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400'>
+                                        <p className='text-[11px] font-semibold tracking-wide text-neutral-500 uppercase dark:text-neutral-400'>
                                             Annotation
                                         </p>
                                         <p className='mt-1 text-sm text-neutral-700 dark:text-neutral-200'>
-                                            {entry.annotationText || 'No annotation text available.'}
+                                            {entry.annotationText ||
+                                                'No annotation text available.'}
                                         </p>
                                     </div>
                                     <p className='mt-3 text-xs text-neutral-500 dark:text-neutral-400'>
@@ -143,7 +148,7 @@ export function Annotate() {
                     <textarea
                         ref={textareaRef}
                         placeholder='Enter your annotation here...'
-                        className='relative min-h-24 w-full resize-none rounded-md border border-neutral-200 bg-neutral-100 p-2 text-sm text-neutral-900 outline-none placeholder:text-sm placeholder:font-light dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500'
+                        className='relative min-h-24 w-full resize-none rounded-md border border-neutral-200 bg-neutral-100 p-2 text-base text-neutral-900 outline-none placeholder:text-sm placeholder:font-light dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500'
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         onKeyDown={async (e) => {
@@ -154,7 +159,7 @@ export function Annotate() {
                         }}
                     />
                     <motion.button
-                        type="submit"
+                        type='submit'
                         disabled={!draft.trim() || isSaving}
                         whileTap={{ scale: 0.95 }}
                         onClick={async (e) => {
@@ -211,4 +216,3 @@ export function Annotate() {
         </AnimatePresence>
     );
 }
-

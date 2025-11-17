@@ -801,7 +801,7 @@ function ReaderContent() {
                 </div>
             </main>
 
-            <footer className='flex w-full flex-col items-center justify-center gap-4 px-32 pt-8 pb-4 text-center text-xs font-medium text-neutral-400'>
+            <footer className='flex w-full flex-col items-center justify-center gap-4 px-32 pt-4 pb-4 text-center text-xs font-medium text-neutral-400'>
                 <p>
                     Page {(pageNumber ?? 0) + 1} of {pages.length} •{' '}
                     {pages.length > 0

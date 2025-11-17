@@ -134,7 +134,7 @@ export function QnA() {
                     <textarea
                         ref={textareaRef}
                         placeholder='Enter your question or response here...'
-                        className='relative min-h-24 w-full resize-none rounded-md border border-neutral-200 bg-neutral-100 p-2 text-sm text-neutral-900 outline-none placeholder:text-sm placeholder:font-light dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500'
+                        className='relative min-h-24 w-full resize-none rounded-md border border-neutral-200 bg-neutral-100 p-2 text-base text-neutral-900 outline-none placeholder:text-sm placeholder:font-light dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 dark:placeholder:text-neutral-500'
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={(e) => {
