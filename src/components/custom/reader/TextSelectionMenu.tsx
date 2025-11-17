@@ -15,8 +15,16 @@ export function TextSelectionMenu() {
     const [selectedText, setSelectedText] = useState<string>('');
     const menuRef = useRef<HTMLDivElement>(null);
 
-    const { setHighlightedText: setQnAHighlightedText, setIsOpen: setQnAOpen, reset: resetQnA } = useQnA();
-    const { setHighlightedText: setAnnotateHighlightedText, setIsOpen: setAnnotateOpen, reset: resetAnnotate } = useAnnotate();
+    const {
+        setHighlightedText: setQnAHighlightedText,
+        setIsOpen: setQnAOpen,
+        reset: resetQnA,
+    } = useQnA();
+    const {
+        setHighlightedText: setAnnotateHighlightedText,
+        setIsOpen: setAnnotateOpen,
+        reset: resetAnnotate,
+    } = useAnnotate();
 
     useEffect(() => {
         const handleSelectionChange = () => {
@@ -63,7 +71,7 @@ export function TextSelectionMenu() {
     return (
         <div
             ref={menuRef}
-            className='fixed z-50'
+            className='fixed z-50 flex gap-2 rounded-md border border-neutral-800 bg-neutral-900 px-2 py-2'
             style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,

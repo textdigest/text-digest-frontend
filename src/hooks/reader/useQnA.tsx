@@ -23,6 +23,8 @@ interface QnAContextType {
     //
     handleSend: (message: string) => void;
     //
+    conversationId: string | null;
+    //
     reset: () => void;
 }
 
@@ -160,6 +162,8 @@ export function QnAProvider({ children }: QnAProviderProps) {
                 setSending,
 
                 handleSend,
+
+                conversationId,
 
                 reset,
             }}
