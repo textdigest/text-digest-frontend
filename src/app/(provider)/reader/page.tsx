@@ -30,6 +30,8 @@ import 'highlight.js/styles/github-dark.css';
 
 import { getTitle } from '@/services/api/library/getTitle';
 import { getNotes } from '@/services/api/library/getNotes';
+import { postPageNumber } from '@/services/api/reader/postPageNumber';
+import { getPageNumber } from '@/services/api/reader/getPageNumber';
 
 import { useMarkdown } from '@/hooks/reader/useMarkdown';
 import { useReaderSettings, ReaderSettingsProvider } from '@/hooks/reader/useReaderSettings';
@@ -42,6 +44,7 @@ import { FontSettings } from '@/components/custom/reader/FontSettings';
 import { TextSelectionMenu } from '@/components/custom/reader/TextSelectionMenu';
 import { QnA } from '@/components/custom/reader/QnA';
 import { Annotate } from '@/components/custom/reader/Annotate';
+import { MicrophoneQnA } from '@/components/custom/reader/MicrophoneQnA';
 
 function extractTextFromChildren(children: ReactNode): string {
     return Children.toArray(children)
@@ -76,10 +79,16 @@ function ReaderContent() {
     });
 
     const [pageNumber, setPageNumber] = useState<number | null>(null);
+    const [viewportContent, setViewportContent] = useState<string>('');
+    const hasInitializedRef = useRef<boolean>(false);
+    const [targetPageNumber, setTargetPageNumber] = useState<number | null>(null);
+    const [isInitialized, setIsInitialized] = useState<boolean>(false);
+    const hasScrolledToTargetRef = useRef<boolean>(false);
 
     const [fontMenuOpen, setFontMenuOpen] = useState(false);
 
     const { fontClass, fontSize, pageColor } = useReaderSettings();
+
     const {
         highlightedText: activeHighlightedText,
         setBookContext,
@@ -161,9 +170,44 @@ function ReaderContent() {
         }
     }, [title, pageNumber, setBookContext]);
 
+    function getViewportTextContent() {
+        const virtualItems = virtualizer.getVirtualItems();
+        if (virtualItems.length === 0) return '';
+
+        const container = parentRef.current;
+        if (!container) return '';
+
+        const viewportTexts: string[] = [];
+        const scrollTop = container.scrollTop;
+        const scrollBottom = scrollTop + container.clientHeight;
+
+        virtualItems.forEach((item) => {
+            const elementTop = item.start;
+            const elementBottom = item.end;
+
+            if (
+                (elementTop >= scrollTop && elementTop <= scrollBottom) ||
+                (elementBottom >= scrollTop && elementBottom <= scrollBottom) ||
+                (elementTop <= scrollTop && elementBottom >= scrollBottom)
+            ) {
+                const element = container.querySelector(
+                    `[data-index="${item.index}"]`,
+                ) as HTMLElement;
+                if (element) {
+                    const text = element.textContent || element.innerText || '';
+                    if (text.trim()) {
+                        viewportTexts.push(text.trim());
+                    }
+                }
+            }
+        });
+
+        return viewportTexts.join('\n\n');
+    }
+
     useEffect(() => {
         const container = parentRef.current;
-        console.log(container)
+
         if (!container) return;
 
         function updatePageNumber() {
@@ -193,6 +237,7 @@ function ReaderContent() {
             }
 
             setPageNumber(closestItem.index);
+            setViewportContent(getViewportTextContent());
         }
 
         updatePageNumber();
@@ -204,7 +249,7 @@ function ReaderContent() {
             container.removeEventListener('scroll', updatePageNumber);
             window.removeEventListener('resize', updatePageNumber);
         };
-    }, [virtualizer, pages.length]);
+    }, [virtualizer, pages.length, getViewportTextContent]);
 
     useEffect(() => {
         async function init() {
@@ -212,6 +257,10 @@ function ReaderContent() {
             const isPublic = searchParams.get('is_public');
 
             if (!titleId || !isPublic) return;
+
+            hasScrolledToTargetRef.current = false;
+            setTargetPageNumber(null);
+            setIsLoading(true);
 
             const title = await getTitle(titleId, isPublic);
             if (!title || !title.parsed_pdf_presigned_url) return;
@@ -223,9 +272,59 @@ function ReaderContent() {
             setAssets(doc.assets || []);
             setMetadata(doc.metadata);
             setNotes([]);
+
+            const savedPageNumber = await getPageNumber(titleId);
+
+            if (savedPageNumber === 0 || savedPageNumber === null) {
+                setIsLoading(false);
+                hasScrolledToTargetRef.current = true;
+            } else {
+                setTargetPageNumber(savedPageNumber);
+            }
+
+            hasInitializedRef.current = true;
+            setIsInitialized(true);
         }
-        init().then(() => setIsLoading(false));
+        init();
     }, [searchParams]);
+
+    useLayoutEffect(() => {
+        if (
+            !isInitialized ||
+            targetPageNumber === null ||
+            pages.length === 0 ||
+            !parentRef.current ||
+            hasScrolledToTargetRef.current
+        ) {
+            return;
+        }
+
+        const virtualItems = virtualizer.getVirtualItems();
+        if (virtualItems.length === 0) {
+            return;
+        }
+
+        virtualizer.scrollToIndex(targetPageNumber, {
+            align: 'start',
+        });
+        hasScrolledToTargetRef.current = true;
+    }, [pages.length, virtualizer, isInitialized, targetPageNumber]);
+
+    useEffect(() => {
+        if (
+            !isLoading ||
+            targetPageNumber === null ||
+            pageNumber === null ||
+            hasScrolledToTargetRef.current === false
+        ) {
+            return;
+        }
+
+        if (pageNumber === targetPageNumber) {
+            setIsLoading(false);
+            setTargetPageNumber(null);
+        }
+    }, [pageNumber, targetPageNumber, isLoading]);
 
     function getAssetSrc(src?: string) {
         const m = new Map<string, string>();
@@ -250,7 +349,13 @@ function ReaderContent() {
             setExistingAnnotations(findAnnotationsForText(highlight));
             setAnnotateOpen(true);
         },
-        [findAnnotationsForText, setAnnotateOpen, setExistingAnnotations, setHighlightedText, setText],
+        [
+            findAnnotationsForText,
+            setAnnotateOpen,
+            setExistingAnnotations,
+            setHighlightedText,
+            setText,
+        ],
     );
 
     useEffect(() => {
@@ -345,8 +450,8 @@ function ReaderContent() {
                 directMatches.length > 0
                     ? directMatches
                     : regexMatches.length > 0
-                    ? regexMatches
-                    : [];
+                      ? regexMatches
+                      : [];
 
             // Process matches in reverse order to maintain correct indices
             for (let i = matches.length - 1; i >= 0; i--) {
@@ -362,8 +467,11 @@ function ReaderContent() {
                 if (!overlaps) {
                     // Check if we're already inside a mark tag by looking at surrounding context
                     const before = highlightedContent.substring(Math.max(0, start - 10), start);
-                    const after = highlightedContent.substring(end, Math.min(highlightedContent.length, end + 10));
-                    
+                    const after = highlightedContent.substring(
+                        end,
+                        Math.min(highlightedContent.length, end + 10),
+                    );
+
                     // Only highlight if not already inside a mark tag
                     if (!before.includes('<mark') && !after.includes('</mark>')) {
                         // Insert highlight markup
@@ -401,17 +509,30 @@ function ReaderContent() {
         refreshNotes();
     }, [title, refreshNotes]);
 
-    if (isLoading)
-        return (
-            <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
-                <Book className='mb-4 h-12 w-12 animate-pulse' />
-                <span className='animate-pulse text-xl font-medium'>
-                    Loading your book. Just a moment...
-                </span>
-            </div>
-        );
+    useEffect(() => {
+        if (!hasInitializedRef.current || pageNumber === null || !title) return;
 
-    if (!title || !metadata.length) return <div>No document</div>;
+        postPageNumber({
+            title_id: title.id,
+            page_number: pageNumber,
+        }).catch((error) => {
+            console.error('Failed to post page number:', error);
+        });
+    }, [pageNumber, title]);
+
+    if (!title || !metadata.length) {
+        if (isLoading) {
+            return (
+                <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                    <Book className='mb-4 h-12 w-12 animate-pulse' />
+                    <span className='animate-pulse text-xl font-medium'>
+                        Loading your book. Just a moment...
+                    </span>
+                </div>
+            );
+        }
+        return <div>No document</div>;
+    }
 
     return (
         <div
@@ -448,14 +569,26 @@ function ReaderContent() {
             </nav>
 
             <main className='relative flex min-h-0 w-full flex-1 justify-center overflow-hidden'>
+                {isLoading && (
+                    <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                        <Book className='mb-4 h-12 w-12 animate-pulse' />
+                        <span className='animate-pulse text-xl font-medium'>
+                            Loading your book. Just a moment...
+                        </span>
+                    </div>
+                )}
+
                 <FontSettings isOpen={fontMenuOpen} onClose={() => setFontMenuOpen(false)} />
-                <QnA />
+
                 <Annotate />
                 <TextSelectionMenu />
 
+                <QnA />
+                <MicrophoneQnA viewportContent={viewportContent} />
+
                 <div
                     ref={parentRef}
-                    className={`scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 h-full w-full overflow-x-hidden overflow-y-auto px-8 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
+                    className={`scrollbar-thin scrollbar-zinc-900 lg:scrollbar-w-8 h-full w-full overflow-x-hidden overflow-y-auto px-4 md:px-32 lg:px-48 xl:px-96 2xl:px-[33svw]`}
                 >
                     <div
                         style={{
@@ -504,8 +637,10 @@ function ReaderContent() {
                                                     : (highlightAttr as string | undefined),
                                             );
 
-                                            const componentProps = props as HTMLAttributes<HTMLElement>;
-                                            const inheritedClass = componentProps.className ?? '';
+                                            const componentProps =
+                                                props as HTMLAttributes<HTMLElement>;
+                                            const inheritedClass =
+                                                componentProps.className ?? '';
 
                                             const fallbackHighlightRaw = highlight.trim().length
                                                 ? highlight
@@ -518,14 +653,19 @@ function ReaderContent() {
                                                 'dark:bg-yellow-800',
                                                 'rounded',
                                                 'px-0.5',
-                                                hasAnnotation ? 'cursor-pointer underline-offset-4' : '',
+                                                hasAnnotation
+                                                    ? 'cursor-pointer underline-offset-4'
+                                                    : '',
                                                 inheritedClass,
                                             ]
                                                 .filter(Boolean)
                                                 .join(' ');
 
-                                            const { onClick: inheritedOnClick, className: _ignored, ...rest } =
-                                                componentProps;
+                                            const {
+                                                onClick: inheritedOnClick,
+                                                className: _ignored,
+                                                ...rest
+                                            } = componentProps;
 
                                             return (
                                                 <mark
@@ -650,7 +790,10 @@ function ReaderContent() {
                                         },
                                     }}
                                 >
-                                    {highlightAnnotatedText(pages[virtualItem.index], virtualItem.index)}
+                                    {highlightAnnotatedText(
+                                        pages[virtualItem.index],
+                                        virtualItem.index,
+                                    )}
                                 </ReactMarkdown>
                             </div>
                         ))}
