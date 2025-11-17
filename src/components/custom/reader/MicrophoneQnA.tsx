@@ -14,6 +14,7 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
     const chunksRef = useRef<BlobPart[]>([]);
     const viewportContentRef = useRef<string>('');
     const pendingAudioRef = useRef<{ base64Data: string; conversationId: string } | null>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
 
     const {
         setHighlightedText,
@@ -29,6 +30,18 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
     useEffect(() => {
         viewportContentRef.current = viewportContent;
     }, [viewportContent]);
+
+    useEffect(() => {
+        const button = buttonRef.current;
+        if (!button) return;
+
+        const handleSelectStart = (e: Event) => e.preventDefault();
+        button.addEventListener('selectstart', handleSelectStart);
+
+        return () => {
+            button.removeEventListener('selectstart', handleSelectStart);
+        };
+    }, []);
 
     useEffect(() => {
         if (pendingAudioRef.current && conversationId) {
@@ -165,8 +178,9 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
 
     return (
         <Button
-            className='fixed right-2 bottom-2 z-10 md:right-32 lg:right-48 xl:right-96 2xl:right-[33svw]'
-            //variant='secondary'
+            ref={buttonRef}
+            className='fixed right-2 bottom-2 z-10 select-none md:right-32 lg:right-48 xl:right-96 2xl:right-[33svw]'
+            variant='secondary'
             onPointerDown={startRecording}
             onPointerUp={stopRecording}
             onPointerLeave={stopRecording}
