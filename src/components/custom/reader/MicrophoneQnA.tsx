@@ -13,7 +13,11 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<BlobPart[]>([]);
     const viewportContentRef = useRef<string>('');
-    const pendingAudioRef = useRef<{ base64Data: string; conversationId: string } | null>(null);
+    const pendingAudioRef = useRef<{
+        base64Data: string;
+        conversationId: string;
+        fileExtension: string;
+    } | null>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
     const {
@@ -75,7 +79,11 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
 
     useEffect(() => {
         if (pendingAudioRef.current && conversationId) {
-            const { base64Data, conversationId: pendingId } = pendingAudioRef.current;
+            const {
+                base64Data,
+                conversationId: pendingId,
+                fileExtension,
+            } = pendingAudioRef.current;
             const currentConversationId = conversationId || pendingId;
 
             (async () => {
@@ -88,6 +96,7 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                         page_content: '',
                         curr_conversation: [],
                         conversation_id: currentConversationId,
+                        file_extension: fileExtension,
                     });
 
                     const transcribedText = response.transcribed || '';
@@ -111,10 +120,22 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
 
     const handleRecordingComplete = useCallback(
         async (blob: Blob) => {
+            console.log('handleRecordingComplete: blob size =', blob.size, 'type =', blob.type);
+
+            if (blob.size < 100) {
+                console.error('Blob too small, not sending');
+                return;
+            }
+
+            const mimeType = blob.type || 'audio/webm';
+            const fileExtension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+
             const reader = new FileReader();
             reader.onloadend = async () => {
                 const base64Audio = reader.result as string;
                 const base64Data = base64Audio.split(',')[1];
+
+                console.log('Base64 data length:', base64Data.length);
 
                 try {
                     setHighlightedText(viewportContentRef.current);
@@ -124,6 +145,7 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                     pendingAudioRef.current = {
                         base64Data,
                         conversationId: generatedId,
+                        fileExtension,
                     };
 
                     if (conversationId) {
@@ -135,6 +157,7 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                             page_content: '',
                             curr_conversation: [],
                             conversation_id: conversationId,
+                            file_extension: fileExtension,
                         });
 
                         const transcribedText = response.transcribed || '';
@@ -180,9 +203,22 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                     return;
                 }
 
-                const mediaRecorder = new MediaRecorder(stream);
+                let mimeType = 'audio/webm;codecs=opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/webm';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/mp4';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = '';
+                }
+
+                const options = mimeType ? { mimeType } : undefined;
+                const mediaRecorder = new MediaRecorder(stream, options);
                 chunksRef.current = [];
 
+                console.log('Recording with MIME type:', mediaRecorder.mimeType);
                 console.log('viewport content: ', viewportContentRef.current);
 
                 mediaRecorder.ondataavailable = (event) => {
@@ -190,7 +226,14 @@ export function MicrophoneQnA({ viewportContent }: { viewportContent: string }) 
                 };
 
                 mediaRecorder.onstop = () => {
-                    const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                    const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
+                    const blob = new Blob(chunksRef.current, { type: actualMimeType });
+                    console.log(
+                        'Recording stopped. Blob size:',
+                        blob.size,
+                        'MIME type:',
+                        actualMimeType,
+                    );
                     stream.getTracks().forEach((track) => track.stop());
                     mediaRecorderRef.current = null;
                     handleRecordingComplete(blob);

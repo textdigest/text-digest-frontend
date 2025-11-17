@@ -7,6 +7,7 @@ type PostVerbalQnaMessageArgs = {
     page_content: string;
     curr_conversation: QnAMessage[];
     conversation_id: string;
+    file_extension: string;
 };
 
 export async function postVerbalQnaMessage({
@@ -15,6 +16,7 @@ export async function postVerbalQnaMessage({
     page_content,
     curr_conversation,
     conversation_id,
+    file_extension,
 }: PostVerbalQnaMessageArgs) {
     const token = await getIdToken();
 
@@ -32,6 +34,7 @@ export async function postVerbalQnaMessage({
                 highlighted_text,
                 curr_conversation,
                 conversation_id,
+                file_extension,
             }),
         },
     );
