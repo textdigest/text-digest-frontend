@@ -22,7 +22,7 @@ export function LibraryCard({
 
     return (
         <div
-            className={`flex flex-1 flex-col justify-between shadow-lg dark:bg-neutral-900 ${title.is_processing ? 'pointer-events-none opacity-60' : ''}`}
+            className={`flex flex-1 flex-col justify-between shadow-lg transition-transform duration-200 hover:scale-[1.03] dark:bg-neutral-900 ${title.is_processing ? 'pointer-events-none opacity-60' : ''}`}
             key={title.id}
             onClick={
                 title.is_processing
