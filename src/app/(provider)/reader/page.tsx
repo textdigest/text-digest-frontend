@@ -87,10 +87,7 @@ function ReaderContent() {
     const [isInitialized, setIsInitialized] = useState<boolean>(false);
     const hasScrolledToTargetRef = useRef<boolean>(false);
 
-    const [fontMenuOpen, setFontMenuOpen] = useState(false);
-    const [searchMenuOpen, setSearchMenuOpen] = useState(false);
-
-    const { fontClass, fontSize, pageColor } = useReaderSettings();
+    const { toggleOpen: toggleFontMenu, fontClass, fontSize, pageColor } = useReaderSettings();
 
     const {
         highlightedText: activeHighlightedText,
@@ -102,7 +99,7 @@ function ReaderContent() {
         setExistingAnnotations,
     } = useAnnotate();
 
-    const { setMetadata: setSearchMetadata } = useSearch();
+    const { toggleOpen: toggleSearchMenu, setMetadata: setSearchMetadata } = useSearch();
 
     // Function to refresh notes from the API
     const refreshNotes = useCallback(async () => {
@@ -554,18 +551,10 @@ function ReaderContent() {
                 <h1 className='uppercase'>{title.title}</h1>
 
                 <div className='hidden items-center gap-2 lg:flex'>
-                    <Button
-                        variant='ghost'
-                        className='mx-2'
-                        onClick={() => setSearchMenuOpen(!searchMenuOpen)}
-                    >
+                    <Button variant='ghost' className='mx-2' onClick={() => toggleSearchMenu()}>
                         <Search />
                     </Button>
-                    <Button
-                        variant='ghost'
-                        className='mx-2'
-                        onClick={() => setFontMenuOpen(!fontMenuOpen)}
-                    >
+                    <Button variant='ghost' className='mx-2' onClick={() => toggleFontMenu()}>
                         <CaseSensitive />
                     </Button>
                     <Button variant='ghost' className='mx-2'>
@@ -588,8 +577,8 @@ function ReaderContent() {
                     </div>
                 )}
 
-                <SearchMenu isOpen={searchMenuOpen} onClose={() => setSearchMenuOpen(false)} />
-                <FontSettings isOpen={fontMenuOpen} onClose={() => setFontMenuOpen(false)} />
+                <SearchMenu />
+                <FontSettings />
 
                 <Annotate />
                 <TextSelectionMenu />

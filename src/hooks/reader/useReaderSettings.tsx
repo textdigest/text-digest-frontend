@@ -52,6 +52,9 @@ const pageColorBlack: PageColor = {
 export const pageColors = [pageColorWhite, pageColorBlack];
 
 interface ReaderSettingsContextType {
+    isOpen: boolean;
+    toggleOpen: () => void;
+    setIsOpen: (open: boolean) => void;
     font: FontOption;
     fontClass: string;
     fontSize: number;
@@ -70,9 +73,14 @@ interface ReaderSettingsProviderProps {
 }
 
 export function ReaderSettingsProvider({ children }: ReaderSettingsProviderProps) {
+    const [isOpen, setIsOpen] = useState<boolean>(false);
     const [font, setFont] = useState<FontOption>('literata');
     const [fontSize, setFontSize] = useState<number>(18);
     const [pageColor, setPageColor] = useState<PageColor>(pageColorBlack);
+
+    const toggleOpen = () => {
+        setIsOpen(!isOpen);
+    };
 
     const toggleFont = () => {
         const fonts: FontOption[] = ['inter', 'robotoMono', 'literata'];
@@ -93,6 +101,9 @@ export function ReaderSettingsProvider({ children }: ReaderSettingsProviderProps
     return (
         <ReaderSettingsContext.Provider
             value={{
+                isOpen,
+                toggleOpen,
+                setIsOpen,
                 font,
                 fontClass,
                 fontSize,

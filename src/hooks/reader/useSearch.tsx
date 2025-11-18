@@ -8,6 +8,9 @@ interface searchResultsType {
 }
 
 interface SearchContextType {
+    isOpen: boolean;
+    toggleOpen: () => void;
+    setIsOpen: (open: boolean) => void;
     setMetadata: (metaData: Metadata[]) => void;
     setSearchTerm: (text: string) => void;
     searchResults: searchResultsType[];
@@ -20,10 +23,15 @@ interface SearchProviderProps {
 }
 
 export function SearchProvider({ children }: SearchProviderProps) {
+    const [isOpen, setIsOpen] = useState<boolean>(false);
     const [metadata, setMetadata] = useState<Metadata[]>([]);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [searchResults, setSearchResults] = useState<searchResultsType[]>([]);
-    console.log(metadata);
+
+    const toggleOpen = () => {
+        setIsOpen(!isOpen);
+    };
+
     useEffect(() => {
         if (!searchTerm) {
             setSearchResults([]);
@@ -43,8 +51,11 @@ export function SearchProvider({ children }: SearchProviderProps) {
 
         setSearchResults(results);
     }, [searchTerm, metadata]);
+
     return (
-        <SearchContext.Provider value={{ setMetadata, setSearchTerm, searchResults }}>
+        <SearchContext.Provider
+            value={{ isOpen, toggleOpen, setIsOpen, setMetadata, setSearchTerm, searchResults }}
+        >
             {children}
         </SearchContext.Provider>
     );
