@@ -14,6 +14,12 @@ export async function middleware(request: NextRequest, response: NextResponse) {
     const isAuthenticated = Boolean(authenticated?.user);
     const pathname = request.nextUrl.pathname;
 
+    if (pathname === '/') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/auth';
+        return NextResponse.redirect(url);
+    }
+
     if (routes.private.includes(pathname) && !isAuthenticated) {
         const url = request.nextUrl.clone();
         url.pathname = '/auth';
