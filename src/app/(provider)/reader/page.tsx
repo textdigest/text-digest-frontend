@@ -545,7 +545,9 @@ function ReaderContent() {
                     Return
                 </Button>
 
-                <h1 className='uppercase'>{title.title}</h1>
+                <h1 className='max-w-full truncate whitespace-nowrap uppercase'>
+                    {title.title}
+                </h1>
 
                 <div className='hidden items-center gap-2 lg:flex'>
                     <Button variant='ghost' className='mx-2'>
@@ -563,7 +565,7 @@ function ReaderContent() {
                     </Button>
                 </div>
 
-                <Button variant='ghost' className='mx-2 lg:hidden'>
+                <Button variant='ghost' className='mx-2 hidden'>
                     <EllipsisVertical />
                 </Button>
             </nav>
