@@ -44,7 +44,9 @@ import { FontSettings } from '@/components/custom/reader/FontSettings';
 import { TextSelectionMenu } from '@/components/custom/reader/TextSelectionMenu';
 import { QnA } from '@/components/custom/reader/QnA';
 import { Annotate } from '@/components/custom/reader/Annotate';
+import { SearchMenu } from '@/components/custom/reader/SearchMenu';
 import { MicrophoneQnA } from '@/components/custom/reader/MicrophoneQnA';
+import { SearchProvider, useSearch } from '@/hooks/reader/useSearch';
 
 function extractTextFromChildren(children: ReactNode): string {
     return Children.toArray(children)
@@ -86,6 +88,7 @@ function ReaderContent() {
     const hasScrolledToTargetRef = useRef<boolean>(false);
 
     const [fontMenuOpen, setFontMenuOpen] = useState(false);
+    const [searchMenuOpen, setSearchMenuOpen] = useState(false);
 
     const { fontClass, fontSize, pageColor } = useReaderSettings();
 
@@ -98,6 +101,8 @@ function ReaderContent() {
         setIsOpen: setAnnotateOpen,
         setExistingAnnotations,
     } = useAnnotate();
+
+    const { setMetadata: setSearchMetadata } = useSearch();
 
     // Function to refresh notes from the API
     const refreshNotes = useCallback(async () => {
@@ -271,6 +276,7 @@ function ReaderContent() {
             setTitle(title);
             setAssets(doc.assets || []);
             setMetadata(doc.metadata);
+            setSearchMetadata(doc.metadata);
             setNotes([]);
 
             const savedPageNumber = await getPageNumber(titleId);
@@ -548,7 +554,11 @@ function ReaderContent() {
                 <h1 className='uppercase'>{title.title}</h1>
 
                 <div className='hidden items-center gap-2 lg:flex'>
-                    <Button variant='ghost' className='mx-2'>
+                    <Button
+                        variant='ghost'
+                        className='mx-2'
+                        onClick={() => setSearchMenuOpen(!searchMenuOpen)}
+                    >
                         <Search />
                     </Button>
                     <Button
@@ -578,6 +588,7 @@ function ReaderContent() {
                     </div>
                 )}
 
+                <SearchMenu isOpen={searchMenuOpen} onClose={() => setSearchMenuOpen(false)} />
                 <FontSettings isOpen={fontMenuOpen} onClose={() => setFontMenuOpen(false)} />
 
                 <Annotate />
@@ -870,18 +881,20 @@ export default function Page() {
         <ReaderSettingsProvider>
             <QnAProvider>
                 <AnnotateProvider>
-                    <Suspense
-                        fallback={
-                            <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
-                                <Book className='mb-4 h-12 w-12 animate-pulse' />
-                                <span className='animate-pulse text-xl font-medium'>
-                                    Loading your book. Just a moment...
-                                </span>
-                            </div>
-                        }
-                    >
-                        <ReaderContent />
-                    </Suspense>
+                    <SearchProvider>
+                        <Suspense
+                            fallback={
+                                <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-neutral-400'>
+                                    <Book className='mb-4 h-12 w-12 animate-pulse' />
+                                    <span className='animate-pulse text-xl font-medium'>
+                                        Loading your book. Just a moment...
+                                    </span>
+                                </div>
+                            }
+                        >
+                            <ReaderContent />
+                        </Suspense>
+                    </SearchProvider>
                 </AnnotateProvider>
             </QnAProvider>
         </ReaderSettingsProvider>
