@@ -75,7 +75,7 @@ function ReaderContent() {
         count: pages.length,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 1000,
-        overscan: 8,
+        overscan: 16,
     });
 
     const [pageNumber, setPageNumber] = useState<number | null>(null);
