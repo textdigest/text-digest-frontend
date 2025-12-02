@@ -77,7 +77,7 @@ function ReaderContent() {
         count: pages.length,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 1000,
-        overscan: 8,
+        overscan: 16,
     });
 
     const [pageNumber, setPageNumber] = useState<number | null>(null);
@@ -548,7 +548,9 @@ function ReaderContent() {
                     Return
                 </Button>
 
-                <h1 className='uppercase'>{title.title}</h1>
+                <h1 className='max-w-full truncate whitespace-nowrap uppercase'>
+                    {title.title}
+                </h1>
 
                 <div className='hidden items-center gap-2 lg:flex'>
                     <Button variant='ghost' className='mx-2' onClick={() => toggleSearchMenu()}>
@@ -562,7 +564,7 @@ function ReaderContent() {
                     </Button>
                 </div>
 
-                <Button variant='ghost' className='mx-2 lg:hidden'>
+                <Button variant='ghost' className='mx-2 hidden'>
                     <EllipsisVertical />
                 </Button>
             </nav>
