@@ -1,6 +1,6 @@
 'use client';
 import type { QnAMessage } from '@/types/reader';
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
 
 import { postQnaMessage } from '@/services/api/reader/postQnaMessage';
 import { useWebsockets } from '@/components/providers/websocket-provider';
@@ -26,6 +26,8 @@ interface QnAContextType {
     conversationId: string | null;
     //
     reset: () => void;
+    //
+    pageContentRef: React.MutableRefObject<string>;
 }
 
 const QnAContext = createContext<QnAContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ export function QnAProvider({ children }: QnAProviderProps) {
     const [conversation, setConversation] = useState<QnAMessage[]>([]);
     const [isSending, setSending] = useState<boolean>(false);
     const [conversationId, setConversationId] = useState<string | null>(null);
+    const pageContentRef = useRef<string>('');
 
     const { reconnect, subscribe } = useWebsockets();
 
@@ -133,7 +136,7 @@ export function QnAProvider({ children }: QnAProviderProps) {
             await postQnaMessage({
                 query: msg,
                 highlighted_text: highlightedText,
-                page_content: '',
+                page_content: pageContentRef.current,
                 curr_conversation: [...conversation, userMessage],
                 conversation_id: conversationId,
             });
@@ -166,6 +169,8 @@ export function QnAProvider({ children }: QnAProviderProps) {
                 conversationId,
 
                 reset,
+
+                pageContentRef,
             }}
         >
             {children}

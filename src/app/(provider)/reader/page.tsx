@@ -35,7 +35,7 @@ import { getPageNumber } from '@/services/api/reader/getPageNumber';
 
 import { useMarkdown } from '@/hooks/reader/useMarkdown';
 import { useReaderSettings, ReaderSettingsProvider } from '@/hooks/reader/useReaderSettings';
-import { QnAProvider } from '@/hooks/reader/useQnA';
+import { QnAProvider, useQnA } from '@/hooks/reader/useQnA';
 import { AnnotateProvider, useAnnotate } from '@/hooks/reader/useAnnotate';
 import type { AnnotationEntry } from '@/hooks/reader/useAnnotate';
 
@@ -101,6 +101,8 @@ function ReaderContent() {
 
     const { toggleOpen: toggleSearchMenu, setMetadata: setSearchMetadata } = useSearch();
 
+    const { pageContentRef } = useQnA();
+
     // Function to refresh notes from the API
     const refreshNotes = useCallback(async () => {
         if (!title) return;
@@ -164,6 +166,10 @@ function ReaderContent() {
     useEffect(() => {
         setRefreshNotes(refreshNotes);
     }, [refreshNotes, setRefreshNotes]);
+
+    useEffect(() => {
+        pageContentRef.current = viewportContent;
+    }, [viewportContent, pageContentRef]);
 
     // Set book context when title is available (use pageNumber 0 as default if not calculated yet)
     useEffect(() => {
